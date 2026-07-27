@@ -178,20 +178,14 @@
 <script>
     (function() {
         // ======================================================
-        // CONFIGURATION — Multi-endpoint failover & Heartbeat
+        // CONFIGURATION — DeepSeek 15s Heartbeat Integration
         // ======================================================
         const APP_ID = '1089';                          // Deriv public test App ID
-        const WS_ENDPOINTS = [
-            `wss://ws.derivws.com/websockets/v3?app_id=${APP_ID}`,
-            `wss://ws.binaryws.com/websockets/v3?app_id=${APP_ID}`,
-            `wss://ws.deriv.com/websockets/v3?app_id=${APP_ID}`
-        ];
-        let currentEndpointIndex = 0;
-
+        const WS_ENDPOINT = `wss://ws.derivws.com/websockets/v3?app_id=${APP_ID}`;
         const RECONNECT_DELAY_MS = 3000;
         const MAX_RECONNECT_ATTEMPTS = 15;
         const TICK_LOG_INTERVAL = 25;
-        const PING_INTERVAL_MS = 30000; // Send heartbeat every 30 seconds to prevent 1006 drop
+        const PING_INTERVAL_MS = 15000;                  // 15-second heartbeat loop
 
         // Market symbol → display name mapping
         const SYMBOL_DISPLAY_NAMES = {
@@ -354,11 +348,16 @@
             }
         }
 
+        // ─────────────────────────────────────
+        // DEEPSEEK HEARTBEAT PING IMPLEMENTATION
+        // ─────────────────────────────────────
         function startPingInterval() {
             if (pingTimer) clearInterval(pingTimer);
             pingTimer = setInterval(() => {
                 if (webSocket && webSocket.readyState === WebSocket.OPEN) {
-                    sendWSMessage({ ping: 1 });
+                    try {
+                        webSocket.send(JSON.stringify({ ping: 1 }));
+                    } catch (e) {}
                 }
             }, PING_INTERVAL_MS);
         }
@@ -460,8 +459,6 @@
                 handleTickData(data.tick);
             } else if (msgType === 'balance' && data?.balance?.balance !== undefined) {
                 $accountBalance.textContent = parseFloat(data.balance.balance).toFixed(2);
-            } else if (msgType === 'ping') {
-                // Heartbeat response acknowledged
             }
         }
 
@@ -476,13 +473,11 @@
             }
             stopPingInterval();
 
-            const activeEndpoint = WS_ENDPOINTS[currentEndpointIndex];
             setConnectionStatus('connecting');
             logToConsole(`Connecting to Deriv WebSocket... (Attempt ${reconnectAttempts + 1})`, 'info');
-            logToConsole(`Endpoint: ${activeEndpoint}`, 'info');
 
             try {
-                webSocket = new WebSocket(activeEndpoint);
+                webSocket = new WebSocket(WS_ENDPOINT);
             } catch (err) {
                 logToConsole(`WebSocket constructor failed: ${err.message}`, 'error');
                 setConnectionStatus('disconnected');
@@ -494,7 +489,10 @@
                 logToConsole('WebSocket connection established successfully.', 'success');
                 setConnectionStatus('connected');
                 reconnectAttempts = 0;
+                
+                // Start the 15-second heartbeat ping loop here
                 startPingInterval();
+
                 setTimeout(() => { sendWSMessage({ balance: 1, subscribe: 1 }); }, 300);
                 if (pendingSymbol) {
                     const sym = pendingSymbol;
@@ -513,8 +511,6 @@
                 stopPingInterval();
                 if (connectionStatus === 'connected' || connectionStatus === 'connecting') {
                     setConnectionStatus('disconnected');
-                    // Cycle to next fallback endpoint
-                    currentEndpointIndex = (currentEndpointIndex + 1) % WS_ENDPOINTS.length;
                     scheduleReconnect();
                 }
             };
@@ -562,6 +558,7 @@
             logToConsole('══════════════════════════════════', 'info');
             logToConsole('🚀 Khanfx Hub Dashboard Initialized', 'success');
             logToConsole(`App ID: ${APP_ID} (public test)`, 'info');
+            logToConsole(`Endpoint: ${WS_ENDPOINT}`, 'info');
             logToConsole('══════════════════════════════════', 'info');
             initiateWebSocketConnection();
         }
