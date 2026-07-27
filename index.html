@@ -1,174 +1,979 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Khanfx Hub - Automated Trading Dashboard</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>Khanfx Hub — Trading Dashboard</title>
+    <script src="https://cdn.tailwindcss.com">
+    </script>
     <script>
         tailwind.config = {
             theme: {
                 extend: {
                     colors: {
-                        cardbg: '#1e293b',
-                        accent: '#10b981',
-                        danger: '#ef4444'
-                    }
-                }
-            }
-        }
+                        surface: '#0f172a',
+                        card: '#1e293b',
+                        border: '#334155',
+                        accent: '#06b6d4',
+                        'accent-dim': '#0891b2',
+                        positive: '#10b981',
+                        negative: '#ef4444',
+                        warning: '#f59e0b',
+                        muted: '#94a3b8',
+                        'console-bg': '#0a0f1a',
+                        'console-text': '#a5f0c5',
+                        'console-warn': '#fbbf24',
+                        'console-error': '#f87171',
+                        'console-info': '#7dd3fc',
+                    },
+                    fontFamily: {
+                        mono: ['JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Consolas', 'Monaco', 'monospace'],
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                    animation: {
+                        'pulse-dot': 'pulseDot 2s ease-in-out infinite',
+                        'slide-up': 'slideUp 0.25s ease-out',
+                    },
+                    keyframes: {
+                        pulseDot: {
+                            '0%, 100%': { opacity: '1', boxShadow: '0 0 0 0 rgba(16, 185, 129, 0.7)' },
+                            '50%': { opacity: '0.85', boxShadow: '0 0 0 8px rgba(16, 185, 129, 0)' },
+                        },
+                        slideUp: {
+                            '0%': { opacity: '0', transform: 'translateY(8px)' },
+                            '100%': { opacity: '1', transform: 'translateY(0)' },
+                        },
+                    },
+                },
+            },
+        };
     </script>
+    <style>
+        /* Custom scrollbar for console */
+        .console-scroll::-webkit-scrollbar {
+            width: 5px;
+        }
+        .console-scroll::-webkit-scrollbar-track {
+            background: #0a0f1a;
+            border-radius: 4px;
+        }
+        .console-scroll::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 4px;
+        }
+        .console-scroll::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+        /* Smooth transitions for card values */
+        .value-transition {
+            transition: all 0.15s ease-out;
+        }
+        /* Subtle card hover */
+        .card-hover {
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+        .card-hover:hover {
+            border-color: #475569;
+            box-shadow: 0 0 20px rgba(6, 182, 212, 0.06);
+        }
+        /* Selection glow for dropdown */
+        select {
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%2394a3b8' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+            background-position: right 0.75rem center;
+            background-repeat: no-repeat;
+            background-size: 1.25em;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+        }
+        select:focus {
+            box-shadow: 0 0 0 2px rgba(6, 182, 212, 0.35);
+        }
+    </style>
 </head>
-<body class="bg-slate-950 text-slate-100 font-sans min-h-screen p-6">
+<body class="bg-surface text-slate-200 font-sans min-h-screen flex flex-col antialiased">
 
-    <main class="max-w-6xl mx-auto space-y-6">
-        <!-- Header -->
-        <header class="flex justify-between items-center border-b border-slate-800 pb-4">
-            <div class="flex items-center space-x-3">
-                <div id="status-dot" class="w-3 h-3 rounded-full bg-danger animate-pulse"></div>
-                <h1 class="text-xl font-bold tracking-wider">KHANFX HUB</h1>
+    <!-- ========== HEADER ========== -->
+    <header class="bg-card border-b border-border px-4 py-3 sm:px-6 lg:px-8 flex items-center justify-between flex-wrap gap-3 shadow-lg shadow-black/20 z-20">
+        <!-- Logo & Title -->
+        <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-accent to-accent-dim flex items-center justify-center text-white font-bold text-sm shadow-md shadow-accent/25">
+                KH
             </div>
-            <div class="text-sm text-slate-400">Account Balance: <span id="account-balance" class="font-mono text-slate-100">$0.00</span></div>
-        </header>
+            <div>
+                <h1 class="text-lg sm:text-xl font-bold tracking-tight text-white leading-tight">Khanfx Hub</h1>
+                <span class="text-xs text-muted tracking-wide">Synthetic Indices Monitor</span>
+            </div>
+        </div>
 
-        <!-- Dashboard Grid -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            
-            <!-- Controls Column -->
-            <div class="bg-cardbg rounded-xl border border-slate-800 p-6 space-y-4 shadow-xl">
-                <h2 class="text-md font-semibold text-slate-200 border-b border-slate-700 pb-2">Bot Controls</h2>
-                
-                <div class="space-y-1">
-                    <label class="text-xs text-slate-400">Select Market</label>
-                    <select id="market-select" class="bg-slate-900 border border-slate-700 text-slate-200 rounded p-2.5 w-full text-sm">
+        <!-- Status & Balance -->
+        <div class="flex items-center gap-4 sm:gap-6 flex-wrap">
+            <!-- Connection Status -->
+            <div class="flex items-center gap-2">
+                <span id="statusDot" class="inline-block w-3 h-3 rounded-full bg-red-500 shadow-md transition-colors duration-300" title="Connection Status"></span>
+                <span id="statusLabel" class="text-xs sm:text-sm font-medium text-muted tracking-wide uppercase">Offline</span>
+            </div>
+            <!-- Account Balance -->
+            <div class="flex items-center gap-2 bg-surface/60 rounded-lg px-3 py-1.5 border border-border/60">
+                <span class="text-xs text-muted uppercase tracking-wider">Balance</span>
+                <span id="accountBalance" class="text-sm font-bold text-white font-mono tabular-nums">0.00</span>
+                <span class="text-xs text-muted">USD</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- ========== MAIN CONTENT ========== -->
+    <main class="flex-1 px-4 py-5 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full space-y-5">
+
+        <!-- Control Panel -->
+        <section class="bg-card border border-border rounded-xl p-4 sm:p-5 shadow-lg shadow-black/15 card-hover">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div>
+                    <h2 class="text-sm font-semibold text-white uppercase tracking-wider mb-0.5">Market Selector</h2>
+                    <p class="text-xs text-muted">Choose a synthetic volatility index to stream real-time ticks</p>
+                </div>
+                <div class="relative w-full sm:w-72">
+                    <select id="marketSelect"
+                    class="w-full bg-surface border border-border text-white rounded-lg px-4 py-2.5 pr-10 text-sm font-medium focus:outline-none focus:border-accent transition-colors duration-200 cursor-pointer">
+                    <option value="" disabled>— Select Market —</option>
+                    <optgroup label="⚡ 1-Second Volatility Indices">
                         <option value="1HZ100V">Volatility 100 (1s) Index</option>
                         <option value="1HZ75V">Volatility 75 (1s) Index</option>
                         <option value="1HZ50V">Volatility 50 (1s) Index</option>
+                        <option value="1HZ25V">Volatility 25 (1s) Index</option>
+                        <option value="1HZ10V">Volatility 10 (1s) Index</option>
+                    </optgroup>
+                    <optgroup label="📊 Standard Volatility Indices">
                         <option value="R_100">Volatility 100 Index</option>
                         <option value="R_75">Volatility 75 Index</option>
                         <option value="R_50">Volatility 50 Index</option>
-                    </select>
-                </div>
-
-                <button id="toggle-bot" class="w-full bg-accent hover:bg-emerald-600 text-slate-950 font-bold py-3 rounded-lg transition shadow-lg">
-                    LAUNCH BOT
-                </button>
+                        <option value="R_25">Volatility 25 Index</option>
+                        <option value="R_10">Volatility 10 Index</option>
+                    </optgroup>
+                </select>
             </div>
-
-            <!-- Market Info Column -->
-            <div class="md:col-span-2 space-y-6">
-                <!-- Live Price Cards -->
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div class="bg-cardbg rounded-xl border border-slate-800 p-5 shadow-xl">
-                        <span class="text-xs text-slate-400 uppercase tracking-wider">Current Market Price</span>
-                        <div id="current-price" class="text-3xl font-mono font-bold text-accent mt-2">0.0000</div>
-                    </div>
-                    <div class="bg-cardbg rounded-xl border border-slate-800 p-5 shadow-xl">
-                        <span class="text-xs text-slate-400 uppercase tracking-wider">Last Digit (Real-time Tick)</span>
-                        <div id="last-digit" class="text-3xl font-mono font-bold text-accent mt-2">0</div>
-                    </div>
-                </div>
-
-                <!-- Execution Console -->
-                <div class="bg-cardbg rounded-xl border border-slate-800 p-6 shadow-xl space-y-4">
-                    <div class="flex justify-between items-center border-b border-slate-700 pb-3">
-                        <h3 class="text-md font-semibold text-slate-200">Execution Console</h3>
-                        <span class="text-sm text-slate-400">Total Profit: <span id="session-profit" class="font-mono font-bold text-accent">$0.00</span></span>
-                    </div>
-
-                    <!-- Log Output Container -->
-                    <div id="log-window" class="h-64 bg-slate-950/90 rounded-lg p-4 font-mono text-xs overflow-y-auto space-y-2 border border-slate-900">
-                        <p class="text-slate-500">> System initialized. Ready to launch...</p>
-                    </div>
-                </div>
-            </div>
-
         </div>
-    </main>
+    </section>
 
-    <!-- Deriv API Execution Engine -->
-    <script>
+    <!-- Data Cards -->
+    <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <!-- Current Market Price -->
+        <div class="bg-card border border-border rounded-xl p-4 sm:p-5 shadow-lg shadow-black/15 card-hover flex flex-col justify-between">
+            <div class="flex items-center justify-between mb-3">
+                <span class="text-xs font-semibold text-muted uppercase tracking-wider">Current Price</span>
+                <span id="selectedMarketBadge" class="text-[10px] bg-surface px-2 py-0.5 rounded-md text-accent font-mono border border-border/60">—</span>
+            </div>
+            <div>
+                <span id="currentPrice" class="text-3xl sm:text-4xl font-bold text-white font-mono tabular-nums value-transition tracking-tight">—.——</span>
+            </div>
+            <div id="priceChangeIndicator" class="mt-2 text-xs text-muted flex items-center gap-1 opacity-0 transition-opacity duration-200">
+                <span id="priceChangeArrow">●</span>
+                <span id="priceChangeText">Waiting for data...</span>
+            </div>
+        </div>
+
+        <!-- Last Digit -->
+        <div class="bg-card border border-border rounded-xl p-4 sm:p-5 shadow-lg shadow-black/15 card-hover flex flex-col items-center justify-center text-center">
+            <span class="text-xs font-semibold text-muted uppercase tracking-wider mb-3">Last Digit</span>
+            <span id="lastDigit"
+            class="text-6xl sm:text-7xl font-black text-accent font-mono tabular-nums value-transition leading-none"
+            style="text-shadow: 0 0 40px rgba(6,182,212,0.5);">—</span>
+            <span class="text-[10px] text-muted mt-2">Extracted from tick quote</span>
+        </div>
+
+        <!-- Session Profit / Change -->
+        <div class="bg-card border border-border rounded-xl p-4 sm:p-5 shadow-lg shadow-black/15 card-hover flex flex-col justify-between">
+            <span class="text-xs font-semibold text-muted uppercase tracking-wider mb-3">Session Change</span>
+            <div>
+                <span id="sessionProfit" class="text-3xl sm:text-4xl font-bold font-mono tabular-nums value-transition tracking-tight text-white">0.00</span>
+            </div>
+            <div class="mt-2 flex items-center gap-2">
+                <span id="sessionProfitPercent" class="text-xs text-muted font-mono">0.00%</span>
+                <span id="sessionTicksCount" class="text-[10px] text-muted bg-surface/60 px-2 py-0.5 rounded-full">0 ticks</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- Execution Console -->
+    <section class="bg-card border border-border rounded-xl shadow-lg shadow-black/15 overflow-hidden card-hover">
+        <div class="flex items-center justify-between px-4 py-3 border-b border-border bg-surface/40">
+            <div class="flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-positive animate-pulse-dot"></span>
+                <h2 class="text-sm font-semibold text-white uppercase tracking-wider">Execution Console</h2>
+            </div>
+            <div class="flex items-center gap-2">
+                <span id="consoleEntryCount" class="text-[10px] text-muted font-mono">0 entries</span>
+                <button id="clearConsoleBtn"
+                class="text-[10px] text-muted hover:text-white bg-surface/60 hover:bg-surface px-2.5 py-1 rounded-md border border-border/40 transition-colors duration-150 uppercase tracking-wider"
+                title="Clear console">Clear</button>
+            </div>
+        </div>
+        <div id="consoleLog"
+        class="console-scroll bg-console-bg text-console-text font-mono text-xs leading-relaxed p-4 h-56 sm:h-64 overflow-y-auto space-y-0.5"
+        aria-label="Execution console log">
+        <div class="text-console-info opacity-70">[System] Console initialized. Awaiting WebSocket connection...</div>
+    </div>
+</section>
+</main>
+
+<!-- ========== FOOTER ========== -->
+<footer class="bg-card border-t border-border px-4 py-2.5 text-center text-[10px] text-muted tracking-wide">
+    Khanfx Hub &copy; <span id="currentYear"></span> &mdash; Connected via Deriv API &mdash; Real-time Synthetic Indices
+</footer>
+
+<!-- ========== SCRIPTS ========== -->
+<script>
+    (function() {
+        // ─────────────────────────────────────
+        // CONSTANTS & CONFIGURATION
+        // ─────────────────────────────────────
         const APP_ID = '33qUaFT0pPP4bUDrITabh';
-        let ws;
-        let currentSymbol = '1HZ100V';
+        const WS_ENDPOINT = `wss://ws.derivws.com/websockets/v3?app_id=${APP_ID}`;
+        const RECONNECT_DELAY_MS = 3000;
+        const MAX_RECONNECT_ATTEMPTS = 15;
+        const TICK_LOG_INTERVAL = 25; // Log every Nth tick to avoid console flood
 
-        function getTimestamp() {
-            return new Date().toLocaleTimeString();
-        }
+        // Market symbol → display name mapping
+        const SYMBOL_DISPLAY_NAMES = {
+            '1HZ100V': 'Volatility 100 (1s)',
+            '1HZ75V': 'Volatility 75 (1s)',
+            '1HZ50V': 'Volatility 50 (1s)',
+            '1HZ25V': 'Volatility 25 (1s)',
+            '1HZ10V': 'Volatility 10 (1s)',
+            'R_100': 'Volatility 100',
+            'R_75': 'Volatility 75',
+            'R_50': 'Volatility 50',
+            'R_25': 'Volatility 25',
+            'R_10': 'Volatility 10',
+        };
 
-        function logMessage(message, colorClass = 'text-slate-400') {
-            const logWindow = document.getElementById('log-window');
-            const p = document.createElement('p');
-            p.className = colorClass;
-            p.innerText = `[${getTimestamp()}] ${message}`;
-            logWindow.appendChild(p);
-            logWindow.scrollTop = logWindow.scrollHeight;
-        }
+        // ─────────────────────────────────────
+        // DOM REFERENCES
+        // ─────────────────────────────────────
+        const $statusDot = document.getElementById('statusDot');
+        const $statusLabel = document.getElementById('statusLabel');
+        const $accountBalance = document.getElementById('accountBalance');
+        const $marketSelect = document.getElementById('marketSelect');
+        const $selectedMarketBadge = document.getElementById('selectedMarketBadge');
+        const $currentPrice = document.getElementById('currentPrice');
+        const $priceChangeIndicator = document.getElementById('priceChangeIndicator');
+        const $priceChangeArrow = document.getElementById('priceChangeArrow');
+        const $priceChangeText = document.getElementById('priceChangeText');
+        const $lastDigit = document.getElementById('lastDigit');
+        const $sessionProfit = document.getElementById('sessionProfit');
+        const $sessionProfitPercent = document.getElementById('sessionProfitPercent');
+        const $sessionTicksCount = document.getElementById('sessionTicksCount');
+        const $consoleLog = document.getElementById('consoleLog');
+        const $consoleEntryCount = document.getElementById('consoleEntryCount');
+        const $clearConsoleBtn = document.getElementById('clearConsoleBtn');
+        const $currentYear = document.getElementById('currentYear');
 
-        function connectWS() {
-            logMessage('Initializing WebSocket connection...', 'text-slate-500');
-            
-            // Updated to use the modern derivws.com gateway endpoint structure
-            ws = new WebSocket(`wss://ws.derivws.com/websockets/v3?app_id=${APP_ID}`);
+        // ─────────────────────────────────────
+        // STATE
+        // ─────────────────────────────────────
+        let webSocket = null;
+        let connectionStatus = 'disconnected'; // 'disconnected' | 'connecting' | 'connected' | 'reconnecting'
+        let activeSymbol = null;
+        let pendingSymbol = null; // Symbol requested while reconnecting
+        let reconnectAttempts = 0;
+        let reconnectTimer = null;
+        let tickSubscriptionId = null;
+        let firstTickPrice = null;
+        let previousTickPrice = null;
+        let sessionTickCount = 0;
+        let consoleEntryCounter = 0;
+        let tickLogCounter = 0;
+        let isForgettingTicks = false;
 
-            ws.onopen = () => {
-                logMessage('Successfully connected to KHANFX HUB infrastructure.', 'text-accent');
-                document.getElementById('status-dot').className = 'w-3 h-3 rounded-full bg-accent animate-pulse';
-                subscribeToSymbol(currentSymbol);
+        // ─────────────────────────────────────
+        // UTILITY: Console Logging
+        // ─────────────────────────────────────
+        function logToConsole(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString('en-GB', { hour12: false, hour: '2-digit',
+                minute: '2-digit', second: '2-digit' });
+            const colorMap = {
+                'info': 'text-console-info',
+                'success': 'text-console-text',
+                'warning': 'text-console-warn',
+                'error': 'text-console-error',
+                'tick': 'text-console-text opacity-60',
             };
-
-            ws.onmessage = (event) => {
-                try {
-                    const data = JSON.parse(event.data);
-
-                    if (data.error) {
-                        logMessage(`API Error: ${data.error.message}`, 'text-danger');
-                        return;
-                    }
-
-                    if (data.msg_type === 'tick' && data.tick) {
-                        const quote = data.tick.quote;
-                        if (quote !== undefined) {
-                            const quoteStr = quote.toString();
-                            const digit = quoteStr.slice(-1);
-
-                            document.getElementById('current-price').innerText = quoteStr;
-                            document.getElementById('last-digit').innerText = digit;
-                        }
-                    }
-                } catch (err) {
-                    logMessage('Data parsing error encountered.', 'text-danger');
-                }
+            const prefixMap = {
+                'info': '[INFO]',
+                'success': '[OK]',
+                'warning': '[WARN]',
+                'error': '[ERR]',
+                'tick': '[TICK]',
             };
+            const colorClass = colorMap[type] || colorMap['info'];
+            const prefix = prefixMap[type] || prefixMap['info'];
 
-            ws.onerror = () => {
-                logMessage('WebSocket Error. Check App ID or Deriv Restrictions.', 'text-danger');
-            };
+            const entry = document.createElement('div');
+            entry.className = `${colorClass} animate-slide-up`;
+            entry.innerHTML =
+                `<span class="text-muted/50">${timestamp}</span> <span class="font-semibold">${prefix}</span> ${escapeHTML(message)}`;
+            $consoleLog.appendChild(entry);
 
-            ws.onclose = () => {
-                logMessage('Connection lost. Attempting to reconnect in 3s...', 'text-danger');
-                document.getElementById('status-dot').className = 'w-3 h-3 rounded-full bg-danger animate-pulse';
-                setTimeout(connectWS, 3000);
-            };
-        }
+            // Auto-scroll to bottom
+            $consoleLog.scrollTop = $consoleLog.scrollHeight;
 
-        function subscribeToSymbol(symbol) {
-            if (ws && ws.readyState === WebSocket.OPEN) {
-                ws.send(JSON.stringify({ forget_all: "ticks" }));
-                ws.send(JSON.stringify({
-                    ticks: symbol,
-                    subscribe: 1
-                }));
-                logMessage(`Switched stream to market: ${symbol}`, 'text-slate-300');
+            // Update counter
+            consoleEntryCounter++;
+            $consoleEntryCount.textContent = `${consoleEntryCounter} entry${consoleEntryCounter !== 1 ? 'es' : ''}`;
+
+            // Trim old entries if exceeding 500
+            while ($consoleLog.children.length > 500) {
+                $consoleLog.removeChild($consoleLog.firstChild);
             }
         }
 
-        document.getElementById('market-select').addEventListener('change', (e) => {
-            currentSymbol = e.target.value;
-            subscribeToSymbol(currentSymbol);
+        function escapeHTML(str) {
+            const div = document.createElement('div');
+            div.appendChild(document.createTextNode(str));
+            return div.innerHTML;
+        }
+
+        function clearConsole() {
+            $consoleLog.innerHTML = '';
+            consoleEntryCounter = 0;
+            $consoleEntryCount.textContent = '0 entries';
+            logToConsole('Console cleared.', 'info');
+        }
+
+        // ─────────────────────────────────────
+        // UTILITY: Update Connection Status UI
+        // ─────────────────────────────────────
+        function setConnectionStatus(status) {
+            connectionStatus = status;
+            $statusDot.classList.remove('bg-red-500', 'bg-yellow-500', 'bg-green-500', 'animate-pulse-dot',
+                'shadow-md');
+
+            switch (status) {
+                case 'connected':
+                    $statusDot.classList.add('bg-green-500', 'animate-pulse-dot');
+                    $statusDot.style.boxShadow = '0 0 10px rgba(16,185,129,0.6)';
+                    $statusLabel.textContent = 'Connected';
+                    $statusLabel.classList.remove('text-muted', 'text-warning', 'text-negative');
+                    $statusLabel.classList.add('text-positive');
+                    reconnectAttempts = 0;
+                    break;
+                case 'connecting':
+                    $statusDot.classList.add('bg-yellow-500');
+                    $statusDot.style.boxShadow = '0 0 8px rgba(245,158,11,0.5)';
+                    $statusLabel.textContent = 'Connecting...';
+                    $statusLabel.classList.remove('text-muted', 'text-positive', 'text-negative');
+                    $statusLabel.classList.add('text-warning');
+                    break;
+                case 'reconnecting':
+                    $statusDot.classList.add('bg-yellow-500');
+                    $statusDot.style.boxShadow = '0 0 8px rgba(245,158,11,0.5)';
+                    $statusLabel.textContent = `Reconnecting (${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})`;
+                    $statusLabel.classList.remove('text-muted', 'text-positive', 'text-negative');
+                    $statusLabel.classList.add('text-warning');
+                    break;
+                case 'disconnected':
+                default:
+                    $statusDot.classList.add('bg-red-500');
+                    $statusDot.style.boxShadow = '0 0 6px rgba(239,68,68,0.4)';
+                    $statusLabel.textContent = 'Offline';
+                    $statusLabel.classList.remove('text-positive', 'text-warning');
+                    $statusLabel.classList.add('text-negative');
+                    break;
+            }
+        }
+
+        // ─────────────────────────────────────
+        // UTILITY: Reset Session Metrics
+        // ─────────────────────────────────────
+        function resetSessionMetrics() {
+            firstTickPrice = null;
+            previousTickPrice = null;
+            sessionTickCount = 0;
+            tickLogCounter = 0;
+            $sessionProfit.textContent = '0.00';
+            $sessionProfit.classList.remove('text-positive', 'text-negative');
+            $sessionProfit.classList.add('text-white');
+            $sessionProfitPercent.textContent = '0.00%';
+            $sessionTicksCount.textContent = '0 ticks';
+            $priceChangeIndicator.classList.add('opacity-0');
+            $priceChangeArrow.textContent = '●';
+            $priceChangeText.textContent = 'Waiting for data...';
+            $currentPrice.textContent = '—.——';
+            $lastDigit.textContent = '—';
+            $lastDigit.style.textShadow = '0 0 40px rgba(6,182,212,0.5)';
+        }
+
+        // ─────────────────────────────────────
+        // CORE: Send WebSocket Message
+        // ─────────────────────────────────────
+        function sendWSMessage(payload) {
+            if (!webSocket || webSocket.readyState !== WebSocket.OPEN) {
+                logToConsole('Cannot send message — WebSocket is not open.', 'warning');
+                return false;
+            }
+            try {
+                const jsonString = JSON.stringify(payload);
+                webSocket.send(jsonString);
+                return true;
+            } catch (err) {
+                logToConsole(`Failed to stringify/send payload: ${err.message}`, 'error');
+                return false;
+            }
+        }
+
+        // ─────────────────────────────────────
+        // CORE: Subscribe to Ticks for a Symbol
+        // ─────────────────────────────────────
+        function subscribeToTicks(symbol) {
+            if (!symbol) {
+                logToConsole('Cannot subscribe — no symbol provided.', 'warning');
+                return;
+            }
+
+            const displayName = SYMBOL_DISPLAY_NAMES[symbol] || symbol;
+            logToConsole(`Subscribing to tick stream: ${displayName} (${symbol})`, 'info');
+
+            const payload = {
+                ticks: symbol,
+                subscribe: 1,
+            };
+
+            if (sendWSMessage(payload)) {
+                activeSymbol = symbol;
+                $selectedMarketBadge.textContent = symbol;
+                $marketSelect.value = symbol;
+                resetSessionMetrics();
+                logToConsole(`Tick subscription request sent for ${symbol}.`, 'success');
+            }
+        }
+
+        // ─────────────────────────────────────
+        // CORE: Forget All Ticks
+        // ─────────────────────────────────────
+        function forgetAllTicks(callback) {
+            if (!webSocket || webSocket.readyState !== WebSocket.OPEN) {
+                logToConsole('Cannot forget ticks — WebSocket not open.', 'warning');
+                if (typeof callback === 'function') callback();
+                return;
+            }
+
+            isForgettingTicks = true;
+            logToConsole('Sending forget_all request for all tick subscriptions...', 'info');
+
+            const payload = { forget_all: 'ticks' };
+
+            if (sendWSMessage(payload)) {
+                // Give the server a short window to process, then invoke callback
+                const timeoutMs = 150;
+                setTimeout(() => {
+                    if (typeof callback === 'function') {
+                        callback();
+                    }
+                    // Reset flag after a safe interval
+                    setTimeout(() => {
+                        isForgettingTicks = false;
+                    }, 200);
+                }, timeoutMs);
+            } else {
+                isForgettingTicks = false;
+                if (typeof callback === 'function') callback();
+            }
+        }
+
+        // ─────────────────────────────────────
+        // CORE: Change Market
+        // ─────────────────────────────────────
+        function changeMarket(newSymbol) {
+            if (!newSymbol) return;
+
+            const displayName = SYMBOL_DISPLAY_NAMES[newSymbol] || newSymbol;
+
+            if (connectionStatus === 'connected' && webSocket && webSocket.readyState === WebSocket.OPEN) {
+                // If already subscribed to the same symbol, skip
+                if (activeSymbol === newSymbol && !isForgettingTicks) {
+                    logToConsole(`Already subscribed to ${displayName}. No action needed.`, 'info');
+                    return;
+                }
+
+                logToConsole(`Switching market to: ${displayName} (${newSymbol})`, 'info');
+                forgetAllTicks(() => {
+                    subscribeToTicks(newSymbol);
+                });
+            } else if (connectionStatus === 'connecting' || connectionStatus === 'reconnecting') {
+                logToConsole(`Connection in progress — queuing market change to: ${displayName}`, 'warning');
+                pendingSymbol = newSymbol;
+                $selectedMarketBadge.textContent = newSymbol + ' (pending)';
+                $marketSelect.value = newSymbol;
+            } else {
+                // Disconnected — store pending and initiate connection
+                logToConsole(`Not connected. Will connect and subscribe to: ${displayName}`, 'info');
+                pendingSymbol = newSymbol;
+                $selectedMarketBadge.textContent = newSymbol + ' (pending)';
+                $marketSelect.value = newSymbol;
+                initiateWebSocketConnection();
+            }
+        }
+
+        // ─────────────────────────────────────
+        // CORE: Handle Incoming Tick Data
+        // ─────────────────────────────────────
+        function handleTickData(tick) {
+            if (!tick || typeof tick.quote === 'undefined') return;
+
+            const quoteStr = String(tick.quote);
+            const price = parseFloat(quoteStr);
+            const lastDigitChar = quoteStr.slice(-1);
+            const symbol = tick.symbol || activeSymbol || 'Unknown';
+
+            if (isNaN(price)) {
+                logToConsole(`Received unparseable tick quote: "${quoteStr}"`, 'warning');
+                return;
+            }
+
+            // Update current price display
+            const formattedPrice = formatPrice(price, quoteStr);
+            $currentPrice.textContent = formattedPrice;
+
+            // Update last digit
+            $lastDigit.textContent = lastDigitChar;
+            // Subtle glow based on digit parity (just for visual flair)
+            const digitNum = parseInt(lastDigitChar, 10);
+            if (!isNaN(digitNum) && digitNum >= 5) {
+                $lastDigit.style.textShadow = '0 0 50px rgba(6,182,212,0.7)';
+            } else if (!isNaN(digitNum)) {
+                $lastDigit.style.textShadow = '0 0 50px rgba(139,92,246,0.5)';
+            }
+
+            // Track session metrics
+            sessionTickCount++;
+
+            if (firstTickPrice === null) {
+                firstTickPrice = price;
+                previousTickPrice = price;
+                $sessionProfit.textContent = '0.00';
+                $sessionProfitPercent.textContent = '0.00%';
+                $sessionProfit.classList.remove('text-positive', 'text-negative');
+                $sessionProfit.classList.add('text-white');
+            }
+
+            // Calculate session change
+            const sessionChange = price - firstTickPrice;
+            const sessionChangePercent = firstTickPrice !== 0 ? ((sessionChange / firstTickPrice) * 100) : 0;
+
+            $sessionProfit.textContent = (sessionChange >= 0 ? '+' : '') + sessionChange.toFixed(2);
+            $sessionProfitPercent.textContent = (sessionChangePercent >= 0 ? '+' : '') + sessionChangePercent.toFixed(
+                4) + '%';
+            $sessionTicksCount.textContent = `${sessionTickCount.toLocaleString()} tick${sessionTickCount !== 1 ? 's' : ''}`;
+
+            // Color session profit
+            $sessionProfit.classList.remove('text-positive', 'text-negative', 'text-white');
+            if (sessionChange > 0.005) {
+                $sessionProfit.classList.add('text-positive');
+            } else if (sessionChange < -0.005) {
+                $sessionProfit.classList.add('text-negative');
+            } else {
+                $sessionProfit.classList.add('text-white');
+            }
+
+            // Price change indicator (tick-to-tick)
+            if (previousTickPrice !== null && price !== previousTickPrice) {
+                const tickDelta = price - previousTickPrice;
+                $priceChangeIndicator.classList.remove('opacity-0');
+                if (tickDelta > 0.001) {
+                    $priceChangeArrow.textContent = '▲';
+                    $priceChangeArrow.className = 'text-positive';
+                    $priceChangeText.textContent = `+${tickDelta.toFixed(4)} from last tick`;
+                    $priceChangeText.className = 'text-positive';
+                } else if (tickDelta < -0.001) {
+                    $priceChangeArrow.textContent = '▼';
+                    $priceChangeArrow.className = 'text-negative';
+                    $priceChangeText.textContent = `${tickDelta.toFixed(4)} from last tick`;
+                    $priceChangeText.className = 'text-negative';
+                } else {
+                    $priceChangeArrow.textContent = '●';
+                    $priceChangeArrow.className = 'text-muted';
+                    $priceChangeText.textContent = 'Unchanged';
+                    $priceChangeText.className = 'text-muted';
+                }
+            }
+
+            previousTickPrice = price;
+
+            // Periodic console logging
+            tickLogCounter++;
+            if (tickLogCounter % TICK_LOG_INTERVAL === 0 || sessionTickCount <= 3) {
+                const shortSymbol = symbol.length > 10 ? symbol.substring(0, 10) + '...' : symbol;
+                logToConsole(`Tick #${sessionTickCount} | ${shortSymbol} | Quote: ${quoteStr} | Last digit: ${lastDigitChar}`,
+                    'tick');
+            }
+
+            // Update badge if symbol differs
+            if (symbol && symbol !== activeSymbol && activeSymbol) {
+                $selectedMarketBadge.textContent = symbol;
+            }
+        }
+
+        function formatPrice(price, quoteStr) {
+            // Determine decimal places from the quote string
+            const parts = quoteStr.split('.');
+            const decimals = parts.length > 1 ? parts[1].length : 2;
+            return price.toFixed(Math.max(decimals, 2));
+        }
+
+        // ─────────────────────────────────────
+        // CORE: Handle API Error Messages
+        // ─────────────────────────────────────
+        function handleAPIError(errorObj) {
+            const code = errorObj?.code || 'UnknownCode';
+            const message = errorObj?.message || 'No error message provided';
+            logToConsole(`API Error [${code}]: ${message}`, 'error');
+
+            // If the error is about invalid symbol, notify prominently
+            if (code === 'InvalidSymbol' || message.toLowerCase().includes('invalid')) {
+                logToConsole('⚠️ The requested symbol may not be valid. Check the market selector options.', 'warning');
+                $selectedMarketBadge.textContent = 'INVALID';
+                $currentPrice.textContent = 'Error';
+                $lastDigit.textContent = '!';
+            }
+        }
+
+        // ─────────────────────────────────────
+        // CORE: Handle Balance Response
+        // ─────────────────────────────────────
+        function handleBalanceResponse(data) {
+            if (data?.balance?.balance !== undefined) {
+                const balance = parseFloat(data.balance.balance);
+                if (!isNaN(balance)) {
+                    $accountBalance.textContent = balance.toFixed(2);
+                    logToConsole(`Account balance updated: ${balance.toFixed(2)} ${data.balance.currency || 'USD'}`,
+                        'success');
+                }
+            }
+        }
+
+        // ─────────────────────────────────────
+        // CORE: Process Inbound WebSocket Message
+        // ─────────────────────────────────────
+        function processInboundMessage(rawData) {
+            let data;
+            try {
+                data = JSON.parse(rawData);
+            } catch (parseErr) {
+                logToConsole(`Failed to parse inbound message: ${parseErr.message}`, 'error');
+                logToConsole(`Raw data (truncated): ${String(rawData).substring(0, 200)}`, 'warning');
+                return;
+            }
+
+            // Handle the message based on msg_type
+            const msgType = data?.msg_type;
+
+            switch (msgType) {
+                case 'tick':
+                    // Could be subscription confirmation or actual tick
+                    if (data?.tick) {
+                        // Actual tick data
+                        handleTickData(data.tick);
+                    }
+                    if (data?.subscription?.id) {
+                        tickSubscriptionId = data.subscription.id;
+                        logToConsole(`Tick subscription confirmed. ID: ${tickSubscriptionId}`, 'success');
+                    }
+                    break;
+
+                case 'balance':
+                    handleBalanceResponse(data);
+                    break;
+
+                case 'error':
+                    handleAPIError(data?.error || { message: data?.error?.message || 'Unknown error' });
+                    break;
+
+                case 'forget_all':
+                    // Confirmation that all ticks were forgotten
+                    const forgottenIds = data?.forget_all || [];
+                    logToConsole(`Ticks forgotten successfully. (${forgottenIds.length} subscription(s) cleared)`,
+                        'info');
+                    tickSubscriptionId = null;
+                    isForgettingTicks = false;
+                    break;
+
+                case 'forget':
+                    logToConsole(`Single subscription forgotten: ${data?.forget || 'unknown'}`, 'info');
+                    if (data?.forget === tickSubscriptionId) {
+                        tickSubscriptionId = null;
+                    }
+                    break;
+
+                case 'website_status':
+                    logToConsole(`Deriv API status: ${data?.website_status?.message || 'Operational'}`, 'info');
+                    break;
+
+                default:
+                    // Some messages (like echo_req responses) may not have a msg_type
+                    if (data?.echo_req) {
+                        // Echo response — usually informational, log sparingly
+                        const echoed = data.echo_req;
+                        if (echoed.ticks && echoed.subscribe === 1) {
+                            // This is the echo of our subscription request — already handled by tick msg_type
+                        } else if (echoed.balance && echoed.subscribe === 1) {
+                            logToConsole('Balance subscription echo received.', 'info');
+                        } else if (echoed.forget_all) {
+                            // Already handled
+                        }
+                    }
+                    break;
+            }
+        }
+
+        // ─────────────────────────────────────
+        // CORE: Initiate WebSocket Connection
+        // ─────────────────────────────────────
+        function initiateWebSocketConnection() {
+            if (webSocket) {
+                // Clean up existing socket
+                try {
+                    webSocket.onopen = null;
+                    webSocket.onclose = null;
+                    webSocket.onerror = null;
+                    webSocket.onmessage = null;
+                    if (webSocket.readyState === WebSocket.OPEN || webSocket.readyState === WebSocket.CONNECTING) {
+                        webSocket.close(1000, 'Client reconnecting');
+                    }
+                } catch (e) {
+                    // Ignore cleanup errors
+                }
+                webSocket = null;
+            }
+
+            setConnectionStatus('connecting');
+            logToConsole(`Connecting to Deriv WebSocket... (Attempt ${reconnectAttempts + 1})`, 'info');
+
+            try {
+                webSocket = new WebSocket(WS_ENDPOINT);
+            } catch (err) {
+                logToConsole(`WebSocket constructor failed: ${err.message}`, 'error');
+                setConnectionStatus('disconnected');
+                scheduleReconnect();
+                return;
+            }
+
+            webSocket.onopen = function() {
+                logToConsole('WebSocket connection established successfully.', 'success');
+                setConnectionStatus('connected');
+                reconnectAttempts = 0;
+
+                // Request balance (may fail without auth — handled gracefully)
+                setTimeout(() => {
+                    sendWSMessage({ balance: 1, subscribe: 1 });
+                }, 300);
+
+                // If there's a pending symbol, subscribe to it
+                if (pendingSymbol) {
+                    const sym = pendingSymbol;
+                    pendingSymbol = null;
+                    logToConsole(`Resuming pending subscription for: ${SYMBOL_DISPLAY_NAMES[sym] || sym}`,
+                        'info');
+                    subscribeToTicks(sym);
+                } else if (!activeSymbol) {
+                    // Default to first option if nothing selected
+                    const defaultSymbol = '1HZ100V';
+                    logToConsole(
+                        `No market selected — defaulting to: ${SYMBOL_DISPLAY_NAMES[defaultSymbol] || defaultSymbol}`,
+                        'info');
+                    subscribeToTicks(defaultSymbol);
+                } else if (activeSymbol && !isForgettingTicks) {
+                    // Re-subscribe to the previously active symbol after reconnect
+                    logToConsole(
+                        `Re-subscribing to previous market: ${SYMBOL_DISPLAY_NAMES[activeSymbol] || activeSymbol}`,
+                        'info');
+                    subscribeToTicks(activeSymbol);
+                }
+            };
+
+            webSocket.onclose = function(event) {
+                const reason = event.reason || 'No reason provided';
+                const code = event.code || 'N/A';
+                logToConsole(`WebSocket closed — Code: ${code}, Reason: ${reason}`, 'warning');
+                tickSubscriptionId = null;
+
+                if (connectionStatus === 'connected' || connectionStatus === 'connecting') {
+                    setConnectionStatus('disconnected');
+                    scheduleReconnect();
+                } else if (connectionStatus === 'reconnecting') {
+                    // Already in reconnect flow
+                } else {
+                    setConnectionStatus('disconnected');
+                }
+            };
+
+            webSocket.onerror = function(event) {
+                logToConsole('WebSocket error occurred. Check network connectivity.', 'error');
+                // The onclose handler will fire after this
+            };
+
+            webSocket.onmessage = function(event) {
+                if (typeof event.data === 'string') {
+                    // Handle potential concatenated JSON messages
+                    const messages = event.data.split(/\r?\n/).filter(m => m.trim().length > 0);
+                    messages.forEach(msg => {
+                        processInboundMessage(msg);
+                    });
+                } else if (event.data instanceof Blob) {
+                    // Handle binary data (unlikely but robust)
+                    const reader = new FileReader();
+                    reader.onload = function() {
+                        processInboundMessage(reader.result);
+                    };
+                    reader.onerror = function() {
+                        logToConsole('Failed to read binary WebSocket message.', 'error');
+                    };
+                    reader.readAsText(event.data);
+                } else {
+                    logToConsole(`Unexpected message type: ${typeof event.data}`, 'warning');
+                }
+            };
+        }
+
+        // ─────────────────────────────────────
+        // CORE: Reconnection Scheduler
+        // ─────────────────────────────────────
+        function scheduleReconnect() {
+            if (reconnectTimer) {
+                clearTimeout(reconnectTimer);
+                reconnectTimer = null;
+            }
+
+            if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+                logToConsole(
+                    `Max reconnection attempts (${MAX_RECONNECT_ATTEMPTS}) reached. Please refresh the page or select a market to retry.`,
+                    'error');
+                setConnectionStatus('disconnected');
+                return;
+            }
+
+            reconnectAttempts++;
+            setConnectionStatus('reconnecting');
+            logToConsole(`Scheduling reconnect attempt ${reconnectAttempts} in ${RECONNECT_DELAY_MS / 1000}s...`,
+                'warning');
+
+            reconnectTimer = setTimeout(() => {
+                reconnectTimer = null;
+                logToConsole(`Attempting reconnect #${reconnectAttempts}...`, 'info');
+                initiateWebSocketConnection();
+            }, RECONNECT_DELAY_MS);
+        }
+
+        // ─────────────────────────────────────
+        // CORE: Manual Disconnect (for cleanup)
+        // ─────────────────────────────────────
+        function disconnectWebSocket() {
+            if (reconnectTimer) {
+                clearTimeout(reconnectTimer);
+                reconnectTimer = null;
+            }
+            reconnectAttempts = MAX_RECONNECT_ATTEMPTS; // Prevent auto-reconnect
+            if (webSocket) {
+                try {
+                    webSocket.onclose = null; // Prevent triggering reconnect
+                    webSocket.close(1000, 'User initiated disconnect');
+                } catch (e) {
+                    // Ignore
+                }
+                webSocket = null;
+            }
+            setConnectionStatus('disconnected');
+            tickSubscriptionId = null;
+            activeSymbol = null;
+            pendingSymbol = null;
+            isForgettingTicks = false;
+            logToConsole('WebSocket disconnected by user.', 'info');
+        }
+
+        // ─────────────────────────────────────
+        // EVENT LISTENERS
+        // ─────────────────────────────────────
+        $marketSelect.addEventListener('change', function() {
+            const selectedSymbol = $marketSelect.value;
+            if (selectedSymbol) {
+                // Reset reconnect attempts when user manually selects a market
+                reconnectAttempts = 0;
+                if (reconnectTimer) {
+                    clearTimeout(reconnectTimer);
+                    reconnectTimer = null;
+                }
+                changeMarket(selectedSymbol);
+            }
         });
 
-        connectWS();
-    </script>
+        $clearConsoleBtn.addEventListener('click', function() {
+            clearConsole();
+        });
+
+        // Handle page unload
+        window.addEventListener('beforeunload', function() {
+            if (reconnectTimer) {
+                clearTimeout(reconnectTimer);
+                reconnectTimer = null;
+            }
+            reconnectAttempts = MAX_RECONNECT_ATTEMPTS;
+            if (webSocket && webSocket.readyState === WebSocket.OPEN) {
+                // Send forget_all before closing
+                try {
+                    webSocket.send(JSON.stringify({ forget_all: 'ticks' }));
+                } catch (e) {
+                    // Ignore
+                }
+            }
+        });
+
+        // Handle page visibility change — reconnect if returning from background
+        document.addEventListener('visibilitychange', function() {
+            if (document.visibilityState === 'visible') {
+                if (connectionStatus === 'disconnected' && reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
+                    logToConsole('Page became visible — checking connection...', 'info');
+                    if (!webSocket || webSocket.readyState !== WebSocket.OPEN) {
+                        reconnectAttempts = 0;
+                        initiateWebSocketConnection();
+                    }
+                }
+            }
+        });
+
+        // ─────────────────────────────────────
+        // INITIALIZATION
+        // ─────────────────────────────────────
+        function initialize() {
+            // Set current year in footer
+            $currentYear.textContent = new Date().getFullYear();
+
+            // Set initial UI state
+            setConnectionStatus('disconnected');
+            $accountBalance.textContent = '0.00';
+            $currentPrice.textContent = '—.——';
+            $lastDigit.textContent = '—';
+            $sessionProfit.textContent = '0.00';
+            $sessionProfitPercent.textContent = '0.00%';
+            $sessionTicksCount.textContent = '0 ticks';
+            $selectedMarketBadge.textContent = '—';
+
+            logToConsole('══════════════════════════════════', 'info');
+            logToConsole('🚀 Khanfx Hub Dashboard Initialized', 'success');
+            logToConsole(`App ID: ${APP_ID}`, 'info');
+            logToConsole(`Endpoint: ${WS_ENDPOINT}`, 'info');
+            logToConsole('══════════════════════════════════', 'info');
+            logToConsole('Select a market from the dropdown to begin streaming.', 'info');
+            logToConsole('Default market: Volatility 100 (1s) Index', 'info');
+
+            // Initiate connection
+            initiateWebSocketConnection();
+        }
+
+        // ─────────────────────────────────────
+        // START THE APPLICATION
+        // ─────────────────────────────────────
+        initialize();
+    })();
+</script>
 </body>
 </html>
