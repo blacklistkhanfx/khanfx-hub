@@ -181,7 +181,7 @@
         // CONFIGURATION — Modify these values if needed
         // ======================================================
         const APP_ID = '1089';                          // Deriv public test App ID (bypasses domain restrictions)
-        const WS_ENDPOINT = `wss://ws.binaryws.com/websockets/v3?app_id=${APP_ID}`;  // Alternative production endpoint
+        const WS_ENDPOINT = `wss://ws.derivws.com/websockets/v3?app_id=${APP_ID}`;
         const RECONNECT_DELAY_MS = 3000;
         const MAX_RECONNECT_ATTEMPTS = 15;
         const TICK_LOG_INTERVAL = 25;
@@ -531,7 +531,6 @@
             }
             setConnectionStatus('connecting');
             logToConsole(`Connecting to Deriv WebSocket... (Attempt ${reconnectAttempts + 1})`, 'info');
-            logToConsole(`Endpoint: ${WS_ENDPOINT}`, 'info');
             try {
                 webSocket = new WebSocket(WS_ENDPOINT);
             } catch (err) {
