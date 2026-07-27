@@ -178,13 +178,20 @@
 <script>
     (function() {
         // ======================================================
-        // CONFIGURATION — Modify these values if needed
+        // CONFIGURATION — Multi-endpoint failover & Heartbeat
         // ======================================================
-        const APP_ID = '1089';                          // Deriv public test App ID (bypasses domain restrictions)
-        const WS_ENDPOINT = `wss://ws.derivws.com/websockets/v3?app_id=${APP_ID}`;
+        const APP_ID = '1089';                          // Deriv public test App ID
+        const WS_ENDPOINTS = [
+            `wss://ws.derivws.com/websockets/v3?app_id=${APP_ID}`,
+            `wss://ws.binaryws.com/websockets/v3?app_id=${APP_ID}`,
+            `wss://ws.deriv.com/websockets/v3?app_id=${APP_ID}`
+        ];
+        let currentEndpointIndex = 0;
+
         const RECONNECT_DELAY_MS = 3000;
         const MAX_RECONNECT_ATTEMPTS = 15;
         const TICK_LOG_INTERVAL = 25;
+        const PING_INTERVAL_MS = 30000; // Send heartbeat every 30 seconds to prevent 1006 drop
 
         // Market symbol → display name mapping
         const SYMBOL_DISPLAY_NAMES = {
@@ -227,6 +234,7 @@
         let pendingSymbol = null;
         let reconnectAttempts = 0;
         let reconnectTimer = null;
+        let pingTimer = null;
         let tickSubscriptionId = null;
         let firstTickPrice = null;
         let previousTickPrice = null;
@@ -336,15 +344,29 @@
 
         function sendWSMessage(payload) {
             if (!webSocket || webSocket.readyState !== WebSocket.OPEN) {
-                logToConsole('Cannot send message — WebSocket is not open.', 'warning');
                 return false;
             }
             try {
                 webSocket.send(JSON.stringify(payload));
                 return true;
             } catch (err) {
-                logToConsole(`Failed to send payload: ${err.message}`, 'error');
                 return false;
+            }
+        }
+
+        function startPingInterval() {
+            if (pingTimer) clearInterval(pingTimer);
+            pingTimer = setInterval(() => {
+                if (webSocket && webSocket.readyState === WebSocket.OPEN) {
+                    sendWSMessage({ ping: 1 });
+                }
+            }, PING_INTERVAL_MS);
+        }
+
+        function stopPingInterval() {
+            if (pingTimer) {
+                clearInterval(pingTimer);
+                pingTimer = null;
             }
         }
 
@@ -368,7 +390,6 @@
                 return;
             }
             isForgettingTicks = true;
-            logToConsole('Sending forget_all request for all tick subscriptions...', 'info');
             if (sendWSMessage({ forget_all: 'ticks' })) {
                 setTimeout(() => {
                     if (typeof callback === 'function') callback();
@@ -384,22 +405,12 @@
             if (!newSymbol) return;
             const displayName = SYMBOL_DISPLAY_NAMES[newSymbol] || newSymbol;
             if (connectionStatus === 'connected' && webSocket && webSocket.readyState === WebSocket.OPEN) {
-                if (activeSymbol === newSymbol && !isForgettingTicks) {
-                    logToConsole(`Already subscribed to ${displayName}.`, 'info');
-                    return;
-                }
-                logToConsole(`Switching market to: ${displayName} (${newSymbol})`, 'info');
+                if (activeSymbol === newSymbol && !isForgettingTicks) return;
                 forgetAllTicks(() => { subscribeToTicks(newSymbol); });
-            } else if (connectionStatus === 'connecting' || connectionStatus === 'reconnecting') {
-                pendingSymbol = newSymbol;
-                $selectedMarketBadge.textContent = newSymbol + ' (pending)';
-                $marketSelect.value = newSymbol;
-                logToConsole(`Connection in progress — queuing ${displayName}`, 'warning');
             } else {
                 pendingSymbol = newSymbol;
                 $selectedMarketBadge.textContent = newSymbol + ' (pending)';
                 $marketSelect.value = newSymbol;
-                logToConsole(`Not connected. Will connect and subscribe to ${displayName}`, 'info');
                 initiateWebSocketConnection();
             }
         }
@@ -413,12 +424,7 @@
             const formattedPrice = price.toFixed(quoteStr.includes('.') ? quoteStr.split('.')[1].length : 2);
             $currentPrice.textContent = formattedPrice;
             $lastDigit.textContent = lastDigitChar;
-            const digitNum = parseInt(lastDigitChar, 10);
-            if (!isNaN(digitNum) && digitNum >= 5) {
-                $lastDigit.style.textShadow = '0 0 50px rgba(6,182,212,0.7)';
-            } else if (!isNaN(digitNum)) {
-                $lastDigit.style.textShadow = '0 0 50px rgba(139,92,246,0.5)';
-            }
+
             sessionTickCount++;
             if (firstTickPrice === null) {
                 firstTickPrice = price;
@@ -433,24 +439,12 @@
             $sessionProfit.textContent = (sessionChange >= 0 ? '+' : '') + sessionChange.toFixed(2);
             $sessionProfitPercent.textContent = (sessionChangePercent >= 0 ? '+' : '') + sessionChangePercent.toFixed(4) + '%';
             $sessionTicksCount.textContent = `${sessionTickCount.toLocaleString()} tick${sessionTickCount !== 1 ? 's' : ''}`;
+            
             $sessionProfit.classList.remove('text-positive', 'text-negative', 'text-white');
             if (sessionChange > 0.005) $sessionProfit.classList.add('text-positive');
             else if (sessionChange < -0.005) $sessionProfit.classList.add('text-negative');
             else $sessionProfit.classList.add('text-white');
-            if (previousTickPrice !== null && price !== previousTickPrice) {
-                const tickDelta = price - previousTickPrice;
-                $priceChangeIndicator.classList.remove('opacity-0');
-                if (tickDelta > 0.001) {
-                    $priceChangeArrow.textContent = '▲'; $priceChangeArrow.className = 'text-positive';
-                    $priceChangeText.textContent = `+${tickDelta.toFixed(4)} from last tick`; $priceChangeText.className = 'text-positive';
-                } else if (tickDelta < -0.001) {
-                    $priceChangeArrow.textContent = '▼'; $priceChangeArrow.className = 'text-negative';
-                    $priceChangeText.textContent = `${tickDelta.toFixed(4)} from last tick`; $priceChangeText.className = 'text-negative';
-                } else {
-                    $priceChangeArrow.textContent = '●'; $priceChangeArrow.className = 'text-muted';
-                    $priceChangeText.textContent = 'Unchanged'; $priceChangeText.className = 'text-muted';
-                }
-            }
+
             previousTickPrice = price;
             tickLogCounter++;
             if (tickLogCounter % TICK_LOG_INTERVAL === 0 || sessionTickCount <= 3) {
@@ -458,63 +452,16 @@
             }
         }
 
-        function handleAPIError(errorObj) {
-            const code = errorObj?.code || 'UnknownCode';
-            const message = errorObj?.message || 'No error message provided';
-            logToConsole(`API Error [${code}]: ${message}`, 'error');
-            if (code === 'InvalidSymbol' || message.toLowerCase().includes('invalid')) {
-                $selectedMarketBadge.textContent = 'INVALID';
-                $currentPrice.textContent = 'Error';
-                $lastDigit.textContent = '!';
-            }
-        }
-
-        function handleBalanceResponse(data) {
-            if (data?.balance?.balance !== undefined) {
-                const balance = parseFloat(data.balance.balance);
-                if (!isNaN(balance)) {
-                    $accountBalance.textContent = balance.toFixed(2);
-                    logToConsole(`Account balance updated: ${balance.toFixed(2)} ${data.balance.currency || 'USD'}`, 'success');
-                }
-            }
-        }
-
         function processInboundMessage(rawData) {
             let data;
-            try {
-                data = JSON.parse(rawData);
-            } catch (parseErr) {
-                logToConsole(`Failed to parse inbound message: ${parseErr.message}`, 'error');
-                return;
-            }
+            try { data = JSON.parse(rawData); } catch (e) { return; }
             const msgType = data?.msg_type;
-            switch (msgType) {
-                case 'tick':
-                    if (data?.tick) handleTickData(data.tick);
-                    if (data?.subscription?.id) {
-                        tickSubscriptionId = data.subscription.id;
-                        logToConsole(`Tick subscription confirmed. ID: ${tickSubscriptionId}`, 'success');
-                    }
-                    break;
-                case 'balance':
-                    handleBalanceResponse(data);
-                    break;
-                case 'error':
-                    handleAPIError(data?.error || { message: data?.error?.message || 'Unknown error' });
-                    break;
-                case 'forget_all':
-                    logToConsole(`Ticks forgotten successfully. (${(data?.forget_all || []).length} subscription(s) cleared)`, 'info');
-                    tickSubscriptionId = null;
-                    isForgettingTicks = false;
-                    break;
-                case 'forget':
-                    logToConsole(`Single subscription forgotten: ${data?.forget || 'unknown'}`, 'info');
-                    if (data?.forget === tickSubscriptionId) tickSubscriptionId = null;
-                    break;
-                case 'website_status':
-                    logToConsole(`Deriv API status: ${data?.website_status?.message || 'Operational'}`, 'info');
-                    break;
-                default: break;
+            if (msgType === 'tick' && data?.tick) {
+                handleTickData(data.tick);
+            } else if (msgType === 'balance' && data?.balance?.balance !== undefined) {
+                $accountBalance.textContent = parseFloat(data.balance.balance).toFixed(2);
+            } else if (msgType === 'ping') {
+                // Heartbeat response acknowledged
             }
         }
 
@@ -523,26 +470,31 @@
                 try {
                     webSocket.onopen = null; webSocket.onclose = null;
                     webSocket.onerror = null; webSocket.onmessage = null;
-                    if (webSocket.readyState === WebSocket.OPEN || webSocket.readyState === WebSocket.CONNECTING) {
-                        webSocket.close(1000, 'Client reconnecting');
-                    }
+                    webSocket.close(1000, 'Client reconnecting');
                 } catch (e) {}
                 webSocket = null;
             }
+            stopPingInterval();
+
+            const activeEndpoint = WS_ENDPOINTS[currentEndpointIndex];
             setConnectionStatus('connecting');
             logToConsole(`Connecting to Deriv WebSocket... (Attempt ${reconnectAttempts + 1})`, 'info');
+            logToConsole(`Endpoint: ${activeEndpoint}`, 'info');
+
             try {
-                webSocket = new WebSocket(WS_ENDPOINT);
+                webSocket = new WebSocket(activeEndpoint);
             } catch (err) {
                 logToConsole(`WebSocket constructor failed: ${err.message}`, 'error');
                 setConnectionStatus('disconnected');
                 scheduleReconnect();
                 return;
             }
+
             webSocket.onopen = function() {
                 logToConsole('WebSocket connection established successfully.', 'success');
                 setConnectionStatus('connected');
                 reconnectAttempts = 0;
+                startPingInterval();
                 setTimeout(() => { sendWSMessage({ balance: 1, subscribe: 1 }); }, 300);
                 if (pendingSymbol) {
                     const sym = pendingSymbol;
@@ -550,29 +502,30 @@
                     subscribeToTicks(sym);
                 } else if (!activeSymbol) {
                     subscribeToTicks('1HZ100V');
-                } else if (activeSymbol && !isForgettingTicks) {
+                } else {
                     subscribeToTicks(activeSymbol);
                 }
             };
+
             webSocket.onclose = function(event) {
                 logToConsole(`WebSocket closed — Code: ${event.code || 'N/A'}, Reason: ${event.reason || 'No reason'}`, 'warning');
                 tickSubscriptionId = null;
+                stopPingInterval();
                 if (connectionStatus === 'connected' || connectionStatus === 'connecting') {
                     setConnectionStatus('disconnected');
+                    // Cycle to next fallback endpoint
+                    currentEndpointIndex = (currentEndpointIndex + 1) % WS_ENDPOINTS.length;
                     scheduleReconnect();
                 }
             };
+
             webSocket.onerror = function() {
                 logToConsole('WebSocket error occurred.', 'error');
             };
+
             webSocket.onmessage = function(event) {
                 if (typeof event.data === 'string') {
                     event.data.split(/\r?\n/).filter(m => m.trim()).forEach(processInboundMessage);
-                } else if (event.data instanceof Blob) {
-                    const reader = new FileReader();
-                    reader.onload = () => processInboundMessage(reader.result);
-                    reader.onerror = () => logToConsole('Failed to read binary message.', 'error');
-                    reader.readAsText(event.data);
                 }
             };
         }
@@ -580,7 +533,7 @@
         function scheduleReconnect() {
             if (reconnectTimer) clearTimeout(reconnectTimer);
             if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
-                logToConsole(`Max reconnection attempts (${MAX_RECONNECT_ATTEMPTS}) reached.`, 'error');
+                logToConsole(`Max reconnection attempts reached.`, 'error');
                 setConnectionStatus('disconnected');
                 return;
             }
@@ -600,37 +553,15 @@
                 changeMarket(selectedSymbol);
             }
         });
+
         $clearConsoleBtn.addEventListener('click', clearConsole);
-        window.addEventListener('beforeunload', function() {
-            if (reconnectTimer) clearTimeout(reconnectTimer);
-            reconnectAttempts = MAX_RECONNECT_ATTEMPTS;
-            if (webSocket && webSocket.readyState === WebSocket.OPEN) {
-                try { webSocket.send(JSON.stringify({ forget_all: 'ticks' })); } catch (e) {}
-            }
-        });
-        document.addEventListener('visibilitychange', function() {
-            if (document.visibilityState === 'visible' && connectionStatus === 'disconnected' && reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
-                if (!webSocket || webSocket.readyState !== WebSocket.OPEN) {
-                    reconnectAttempts = 0;
-                    initiateWebSocketConnection();
-                }
-            }
-        });
 
         function initialize() {
             $currentYear.textContent = new Date().getFullYear();
             setConnectionStatus('disconnected');
-            $accountBalance.textContent = '0.00';
-            $currentPrice.textContent = '—.——';
-            $lastDigit.textContent = '—';
-            $sessionProfit.textContent = '0.00';
-            $sessionProfitPercent.textContent = '0.00%';
-            $sessionTicksCount.textContent = '0 ticks';
-            $selectedMarketBadge.textContent = '—';
             logToConsole('══════════════════════════════════', 'info');
             logToConsole('🚀 Khanfx Hub Dashboard Initialized', 'success');
             logToConsole(`App ID: ${APP_ID} (public test)`, 'info');
-            logToConsole(`Endpoint: ${WS_ENDPOINT}`, 'info');
             logToConsole('══════════════════════════════════', 'info');
             initiateWebSocketConnection();
         }
