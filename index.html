@@ -12,9 +12,8 @@
                 extend: {
                     colors: {
                         surface: '#0f172a', card: '#1e293b', border: '#334155',
-                        accent: '#06b6d4', 'accent-dim': '#0891b2', positive: '#10b981',
-                        negative: '#ef4444', muted: '#94a3b8',
-                        'console-bg': '#0a0f1a', 'console-text': '#a5f0c5',
+                        accent: '#06b6d4', positive: '#10b981', negative: '#ef4444',
+                        muted: '#94a3b8', 'console-bg': '#0a0f1a', 'console-text': '#a5f0c5',
                     },
                     fontFamily: {
                         sans: ['Inter', 'system-ui', 'sans-serif'],
@@ -81,7 +80,7 @@
         </div>
     </header>
 
-    <!-- ========== LOGIN MODAL ========== -->
+    <!-- ========== LOGIN MODAL (with feedback) ========== -->
     <div id="login-modal" class="fixed inset-0 bg-black/50 z-40 hidden flex items-center justify-center p-4">
         <div class="bg-card border border-border rounded-xl max-w-sm w-full p-6 shadow-2xl">
             <h2 class="text-lg font-bold text-white mb-4">🔐 Connect to Deriv</h2>
@@ -94,12 +93,15 @@
             <input id="manual-token-input" type="password" placeholder="Paste your API token"
                    class="w-full bg-surface border border-border rounded-lg px-3 py-2 text-sm text-white mb-3 focus:outline-none focus:border-accent">
             <button id="manual-login-btn" class="w-full py-3 bg-surface border border-border hover:bg-surface/60 text-white font-semibold rounded-lg transition">Connect with Token</button>
-            <p class="text-[10px] text-muted mt-3 text-center">Make sure your Deriv App has the exact redirect URI:<br><span id="display-redirect-uri" class="text-accent"></span></p>
+            <!-- Feedback area -->
+            <div id="login-feedback" class="mt-3 text-xs text-center hidden"></div>
             <button id="close-login-modal" class="w-full mt-3 py-2 text-xs text-muted hover:text-white">Cancel</button>
         </div>
     </div>
 
-    <!-- ========== SIDEBAR + MAIN ========== -->
+    <!-- rest of the sidebar and main content is identical to the previous full version, just include it -->
+    <!-- For brevity I'll keep the full code as before, but make sure the JS is updated -->
+    <!-- ===== SIDEBAR + MAIN (same as previous fully-loaded version) ===== -->
     <div class="flex flex-1 overflow-hidden">
         <aside id="sidebar" class="hidden lg:flex flex-col bg-card border-r border-border w-64 p-4 space-y-2 overflow-y-auto">
             <div class="sidebar-item active px-3 py-2 rounded-lg cursor-pointer text-sm" data-tab="dtrader">📊 DTrader</div>
@@ -320,22 +322,15 @@
         (function() {
             // ====================== CONFIG ======================
             const APP_ID = '33qUaFT0pPP4bUDrITabh';
-            const WS_ENDPOINT = `wss://ws.derivws.com/websockets/v3?app_id=${APP_ID}`;
-            // Build the exact redirect URI with trailing slash
+            // Try the alternative endpoint which may be more stable
+            const WS_ENDPOINT = `wss://ws.binaryws.com/websockets/v3?app_id=${APP_ID}`;
+            // Build redirect URI as before
             let basePath = window.location.pathname;
-            // Remove index.html if present
-            if (basePath.endsWith('index.html')) {
-                basePath = basePath.substring(0, basePath.lastIndexOf('/') + 1);
-            }
-            // Ensure trailing slash
+            if (basePath.endsWith('index.html')) basePath = basePath.substring(0, basePath.lastIndexOf('/') + 1);
             if (!basePath.endsWith('/')) basePath += '/';
             const REDIRECT_URI = window.location.origin + basePath;
             const OAUTH_URL = `https://oauth.deriv.com/oauth2/authorize?app_id=${APP_ID}&l=en&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&response_type=token&state=kh`;
 
-            // Display redirect URI in the modal
-            document.getElementById('display-redirect-uri').textContent = REDIRECT_URI;
-
-            // DOM helpers
             const $ = id => document.getElementById(id);
             const loginBtn = $('login-button'), logoutBtn = $('logout-button');
             const statusDot = $('statusDot'), statusLabel = $('statusLabel');
@@ -349,8 +344,8 @@
             const buyBtn1 = $('buyBtn1'), buyBtn2 = $('buyBtn2');
             const stakeInput = $('stakeInput'), durationInput = $('durationInput');
             const contractParams = $('contractParams');
+            const loginFeedback = $('login-feedback');
 
-            // State
             let ws = null, isAuthorized = false, userToken = null, activeSymbol = null;
             let currentContract = 'rise_fall';
             let mainChart = null, mainCandleSeries = null, mainCurrentCandle = null;
@@ -413,23 +408,40 @@
                 userToken = token;
                 sessionStorage.setItem('deriv_token', token);
                 loginModal.classList.add('hidden');
+                showFeedback(''); // clear any old message
                 if (ws) { ws.close(); ws = null; }
                 openWebSocket();
+            }
+
+            function showFeedback(msg, isError = false) {
+                loginFeedback.classList.remove('hidden', 'text-positive', 'text-negative', 'text-muted');
+                if (isError) loginFeedback.classList.add('text-negative');
+                else loginFeedback.classList.add('text-muted');
+                loginFeedback.textContent = msg;
             }
 
             function openWebSocket() {
                 if (!userToken) return;
                 setStatus('connecting');
+                showFeedback('Connecting…', false);
                 ws = new WebSocket(WS_ENDPOINT);
                 ws.onopen = () => {
                     setStatus('connected');
+                    showFeedback('Connected, authorizing…', false);
                     ws.send(JSON.stringify({ authorize: userToken }));
                 };
                 ws.onmessage = (e) => {
                     const data = JSON.parse(e.data);
                     if (data.msg_type === 'authorize') {
-                        if (data.error) { log('Auth error: ' + data.error.message, 'error'); logout(); return; }
+                        if (data.error) {
+                            showFeedback('Authorization failed: ' + data.error.message, true);
+                            log('Auth error: ' + data.error.message, 'error');
+                            logout();
+                            return;
+                        }
                         isAuthorized = true;
+                        showFeedback('Authorization successful!', false);
+                        setTimeout(() => showFeedback(''), 2000);
                         updateUIForAuth();
                         ws.send(JSON.stringify({ balance: 1, subscribe: 1 }));
                         if (!activeSymbol && marketSelect.value) subscribeMain(marketSelect.value);
@@ -463,11 +475,20 @@
                         log(data.error.message, 'error');
                     }
                 };
-                ws.onclose = () => {
-                    if (!isAuthorized) logout();
-                    else setStatus('disconnected');
+                ws.onclose = (event) => {
+                    if (!isAuthorized) {
+                        showFeedback('Connection closed. Check console.', true);
+                        logout();
+                    } else {
+                        setStatus('disconnected');
+                        showFeedback('Disconnected. Trying to reconnect…', true);
+                        setTimeout(() => { if (userToken && !isAuthorized) connect(userToken); }, 3000);
+                    }
                 };
-                ws.onerror = () => log('WebSocket error', 'error');
+                ws.onerror = () => {
+                    showFeedback('WebSocket error. Check network.', true);
+                    log('WebSocket error', 'error');
+                };
             }
 
             function logout() {
@@ -477,6 +498,7 @@
                 if (ws) { ws.close(); ws = null; }
                 updateUIForAuth();
                 setStatus('disconnected');
+                showFeedback('');
             }
 
             function updateUIForAuth() {
@@ -658,19 +680,12 @@
             buyBtn1.addEventListener('click', () => placeTrade('rise'));
             buyBtn2.addEventListener('click', () => placeTrade('fall'));
 
-            // Clear console
             $('clearConsoleBtn').addEventListener('click', () => { consoleLog.innerHTML = ''; });
 
             // Login modal events
-            loginBtn.addEventListener('click', () => {
-                loginModal.classList.remove('hidden');
-                // Update the displayed redirect URI
-                $('display-redirect-uri').textContent = REDIRECT_URI;
-            });
+            loginBtn.addEventListener('click', () => loginModal.classList.remove('hidden'));
             $('close-login-modal').addEventListener('click', () => loginModal.classList.add('hidden'));
-            $('oauth-login-btn').addEventListener('click', () => {
-                window.location.href = OAUTH_URL;
-            });
+            $('oauth-login-btn').addEventListener('click', () => window.location.href = OAUTH_URL);
             $('manual-login-btn').addEventListener('click', () => {
                 const token = $('manual-token-input').value.trim();
                 if (!token) return alert('Enter a token');
@@ -678,7 +693,6 @@
             });
             logoutBtn.addEventListener('click', logout);
 
-            // ---------- Init ----------
             function init() {
                 $('currentYear').textContent = new Date().getFullYear();
                 initTour();
