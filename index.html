@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Khanfx_Hub — Trading with Charts</title>
+  <title>Khanfx_Hub — Deriv Trading</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
   <script>
@@ -20,14 +20,6 @@
           fontFamily: {
             mono: ['JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Consolas', 'Monaco', 'monospace'],
             sans: ['Inter', 'system-ui', 'sans-serif'],
-          },
-          animation: {
-            'pulse-dot': 'pulseDot 2s ease-in-out infinite',
-            'slide-up': 'slideUp 0.25s ease-out',
-          },
-          keyframes: {
-            pulseDot: { '0%,100%': { opacity: '1', boxShadow: '0 0 0 0 rgba(16,185,129,0.7)' }, '50%': { opacity: '0.85', boxShadow: '0 0 0 8px rgba(16,185,129,0)' } },
-            slideUp: { '0%': { opacity: '0', transform: 'translateY(8px)' }, '100%': { opacity: '1', transform: 'translateY(0)' } },
           },
         },
       },
@@ -60,7 +52,7 @@
       <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-accent to-accent-dim flex items-center justify-center text-white font-bold text-sm shadow-md shadow-accent/25">KH</div>
       <div>
         <h1 class="text-lg sm:text-xl font-bold tracking-tight text-white leading-tight">Khanfx_Hub</h1>
-        <span class="text-xs text-muted tracking-wide">All Deriv Contracts</span>
+        <span class="text-xs text-muted tracking-wide">Deriv Contracts</span>
       </div>
     </div>
     <div class="flex items-center gap-4 sm:gap-6 flex-wrap">
@@ -78,17 +70,17 @@
 
   <main class="flex-1 px-4 py-5 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full space-y-5">
 
-    <!-- Login Section -->
-    <section id="loginSection" class="bg-card border border-border rounded-xl p-4 sm:p-5 shadow-lg shadow-black/15 card-hover">
+    <!-- Login Screen -->
+    <section id="loginSection" class="bg-card border border-border rounded-xl p-4 sm:p-5 shadow-lg shadow-black/15 card-hover text-center">
       <h2 class="text-sm font-semibold text-white uppercase tracking-wider mb-3">🔐 Login to Deriv</h2>
-      <p class="text-xs text-muted mb-3">Connect your Deriv account to trade and view live charts.</p>
+      <p class="text-xs text-muted mb-4">Connect your Deriv account to trade and view live charts.</p>
       <button id="loginButton" class="px-6 py-3 bg-accent hover:bg-accent-dim text-white font-bold rounded-lg transition-colors duration-200 shadow-lg">
         Login with Deriv
       </button>
-      <p id="authErrorMsg" class="text-negative text-xs mt-2 hidden"></p>
+      <p id="authErrorMsg" class="text-negative text-xs mt-3 hidden"></p>
     </section>
 
-    <!-- Main Dashboard (hidden before login) -->
+    <!-- Main Dashboard (hidden until logged in) -->
     <div id="dashboardContent" class="hidden space-y-5">
 
       <!-- Market Selector -->
@@ -96,19 +88,19 @@
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
             <h2 class="text-sm font-semibold text-white uppercase tracking-wider mb-0.5">Market Selector</h2>
-            <p class="text-xs text-muted">Synthetic indices – real‑time tick streaming</p>
+            <p class="text-xs text-muted">Synthetic indices – real‑time ticks</p>
           </div>
           <div class="relative w-full sm:w-72">
             <select id="marketSelect" class="w-full bg-surface border border-border text-white rounded-lg px-4 py-2.5 pr-10 text-sm font-medium focus:outline-none focus:border-accent transition-colors duration-200 cursor-pointer">
               <option value="" disabled>— Select Market —</option>
-              <optgroup label="⚡ 1-Second Volatility Indices">
+              <optgroup label="⚡ 1-Second Volatility">
                 <option value="1HZ100V">Volatility 100 (1s)</option>
                 <option value="1HZ75V">Volatility 75 (1s)</option>
                 <option value="1HZ50V">Volatility 50 (1s)</option>
                 <option value="1HZ25V">Volatility 25 (1s)</option>
                 <option value="1HZ10V">Volatility 10 (1s)</option>
               </optgroup>
-              <optgroup label="📊 Standard Volatility Indices">
+              <optgroup label="📊 Standard Volatility">
                 <option value="R_100">Volatility 100</option>
                 <option value="R_75">Volatility 75</option>
                 <option value="R_50">Volatility 50</option>
@@ -160,7 +152,6 @@
           <h2 class="text-sm font-semibold text-white uppercase tracking-wider">⚡ Trade Contracts</h2>
           <span class="text-[10px] text-muted">All deriv options</span>
         </div>
-        <!-- Contract type selector -->
         <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 mb-4">
           <button data-contract="rise_fall" class="trade-type-btn bg-surface border border-border rounded-lg px-3 py-2 text-xs font-medium hover:border-accent transition-colors active-tab">Rise / Fall</button>
           <button data-contract="digits" class="trade-type-btn bg-surface border border-border rounded-lg px-3 py-2 text-xs font-medium hover:border-accent transition-colors">Digits</button>
@@ -171,9 +162,7 @@
           <button data-contract="reset" class="trade-type-btn bg-surface border border-border rounded-lg px-3 py-2 text-xs font-medium hover:border-accent transition-colors">Reset Call/Put</button>
           <button data-contract="accumulator" class="trade-type-btn bg-surface border border-border rounded-lg px-3 py-2 text-xs font-medium hover:border-accent transition-colors">Accumulator (Beta)</button>
         </div>
-        <!-- Contract‑specific parameters -->
         <div id="contractParams" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-4"></div>
-        <!-- Stake, Duration & Buy Buttons -->
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
           <div>
             <label class="text-xs text-muted block mb-1">Stake (USD)</label>
@@ -219,6 +208,7 @@
       // ====================== CONFIGURATION ======================
       const APP_ID = '33qUaFT0pPP4bUDrITabh';
       const WS_ENDPOINT = `wss://ws.derivws.com/websockets/v3?app_id=${APP_ID}`;
+      // Redirect URI – automatically uses the current page URL (must match Deriv App setting)
       const REDIRECT_URI = window.location.origin + window.location.pathname;
       const OAUTH_URL = `https://oauth.deriv.com/oauth2/authorize?app_id=${APP_ID}&l=en&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&response_type=token&state=kh`;
       const RECONNECT_DELAY = 3000;
@@ -252,13 +242,12 @@
       let consoleCounter = 0, tickLogCounter = 0, isForgetting = false, isAuthorized = false;
       let currentContractType = 'rise_fall';
       let userToken = null;
-      let authTimeout = null; // timeout for auth response
 
       // Chart variables
       let chart = null, candleSeries = null;
       let currentCandle = null, lastCandleTime = null, chartReady = false;
 
-      // ---------- Chart Initialization ----------
+      // ---------- Chart ----------
       function initChart() {
         if (chart) return;
         chart = LightweightCharts.createChart(document.getElementById('chart-container'), {
@@ -300,29 +289,27 @@
       // ---------- Auth ----------
       function parseHashToken() {
         const hash = window.location.hash.substring(1);
+        if (!hash) return false;
         const params = new URLSearchParams(hash);
-        const token = params.get('access_token');
+        const token = params.get('access_token') || params.get('token1');
         if (token) {
           userToken = token;
+          // Store temporarily
           sessionStorage.setItem('deriv_token', userToken);
+          // Clean URL
           history.replaceState(null, '', window.location.pathname);
           return true;
         }
         return false;
       }
 
-      function clearTokenAndShowLogin(reason = 'Authorization failed. Please log in again.') {
+      function logout() {
         userToken = null;
         sessionStorage.removeItem('deriv_token');
         isAuthorized = false;
-        if (ws) {
-          try { ws.close(); } catch(e) {}
-          ws = null;
-        }
+        if (ws) { ws.close(); ws = null; }
         dashboardContent.classList.add('hidden');
         loginSection.classList.remove('hidden');
-        authErrorMsg.textContent = reason;
-        authErrorMsg.classList.remove('hidden');
         setStatus('disconnected');
       }
 
@@ -360,7 +347,6 @@
         }
       }
 
-      // ---------- WebSocket ----------
       function resetSession() {
         firstTickPrice = null; prevTickPrice = null; sessionTicks = 0; tickLogCounter = 0;
         sessionProfit.textContent = '0.00'; sessionProfit.className = 'text-3xl sm:text-4xl font-bold font-mono tabular-nums value-transition tracking-tight text-white';
@@ -372,7 +358,7 @@
       }
 
       function send(msg) {
-        if (!ws || ws.readyState !== WebSocket.OPEN) { log('Cannot send – WebSocket not open.', 'warning'); return false; }
+        if (!ws || ws.readyState !== WebSocket.OPEN) { log('Cannot send – not open.', 'warning'); return false; }
         try { ws.send(JSON.stringify(msg)); return true; } catch(e) { log(`Send error: ${e.message}`, 'error'); return false; }
       }
 
@@ -390,7 +376,6 @@
       function forgetAll(cb) {
         if (!ws || ws.readyState !== WebSocket.OPEN) { if (cb) cb(); return; }
         isForgetting = true;
-        log('Forgetting all tick subscriptions…', 'info');
         send({ forget_all: 'ticks' });
         setTimeout(() => { if (cb) cb(); setTimeout(() => { isForgetting = false; }, 200); }, 150);
       }
@@ -398,10 +383,8 @@
       function changeMarket(sym) {
         if (!sym) return;
         if (connectionStatus === 'connected' && ws && ws.readyState === WebSocket.OPEN) {
-          if (activeSymbol === sym && !isForgetting) { log('Already subscribed.', 'info'); return; }
+          if (activeSymbol === sym && !isForgetting) return;
           forgetAll(() => subscribe(sym));
-        } else if (connectionStatus === 'connecting' || connectionStatus === 'reconnecting') {
-          pendingSymbol = sym; selectedMarketBadge.textContent = sym + ' (pending)'; marketSelect.value = sym;
         } else {
           pendingSymbol = sym; selectedMarketBadge.textContent = sym + ' (pending)'; marketSelect.value = sym;
           initiateConnection();
@@ -416,7 +399,7 @@
         lastDigit.textContent = last;
         lastDigit.style.textShadow = parseInt(last) >= 5 ? '0 0 50px rgba(6,182,212,0.7)' : '0 0 50px rgba(139,92,246,0.5)';
         sessionTicks++;
-        if (firstTickPrice === null) { firstTickPrice = price; prevTickPrice = price; sessionProfit.textContent = '0.00'; sessionProfitPercent.textContent = '0.00%'; sessionProfit.className = 'text-3xl sm:text-4xl font-bold font-mono tabular-nums value-transition tracking-tight text-white'; }
+        if (firstTickPrice === null) { firstTickPrice = price; prevTickPrice = price; sessionProfit.textContent = '0.00'; sessionProfitPercent.textContent = '0.00%'; }
         const change = price - firstTickPrice, changePct = firstTickPrice ? (change / firstTickPrice * 100) : 0;
         sessionProfit.textContent = (change>=0?'+':'') + change.toFixed(2);
         sessionProfitPercent.textContent = (changePct>=0?'+':'') + changePct.toFixed(4) + '%';
@@ -435,7 +418,7 @@
         }
         prevTickPrice = price;
         tickLogCounter++;
-        if (tickLogCounter % 25 === 0 || sessionTicks <= 3) log(`Tick #${sessionTicks} | ${tick.symbol||activeSymbol} | ${q} | last: ${last}`, 'tick');
+        if (tickLogCounter % 25 === 0 || sessionTicks <= 3) log(`Tick #${sessionTicks} | ${q} | last: ${last}`, 'tick');
         const epoch = tick.epoch ? parseInt(tick.epoch) : Math.floor(Date.now()/1000);
         updateChartFromTick(price, epoch);
       }
@@ -443,21 +426,28 @@
       function handleBalance(data) {
         if (data?.balance?.balance !== undefined) {
           accountBalance.textContent = parseFloat(data.balance.balance).toFixed(2);
-          log(`Balance: ${accountBalance.textContent} ${data.balance.currency||'USD'}`, 'success');
+          log(`Balance: ${accountBalance.textContent}`, 'success');
         }
       }
 
       function handleAuthorize(data) {
-        if (authTimeout) { clearTimeout(authTimeout); authTimeout = null; }
         if (data?.error) {
           isAuthorized = false;
           log(`Authorization error: ${data.error.message}`, 'error');
-          clearTokenAndShowLogin(`Login failed: ${data.error.message}`);
-        } else if (data?.authorize) {
+          logout();
+          return;
+        }
+        if (data?.authorize) {
           isAuthorized = true;
           log('Token authorized.', 'success');
           send({ balance: 1, subscribe: 1 });
-          // If we had pending actions, they are already handled
+          // subscribe to market after successful auth
+          if (pendingSymbol) {
+            const sym = pendingSymbol; pendingSymbol = null;
+            subscribe(sym);
+          } else if (!activeSymbol) {
+            subscribe('1HZ100V');
+          }
         }
       }
 
@@ -481,19 +471,18 @@
         try { data = JSON.parse(raw); } catch(e) { log(`Parse error: ${e.message}`, 'error'); return; }
         switch (data?.msg_type) {
           case 'ping': send({ pong: 1 }); break;
-          case 'tick': if (data.tick) handleTick(data.tick); if (data.subscription?.id) { tickSubId = data.subscription.id; log(`Sub ID: ${tickSubId}`, 'success'); } break;
+          case 'tick': if (data.tick) handleTick(data.tick); if (data.subscription?.id) { tickSubId = data.subscription.id; } break;
           case 'balance': handleBalance(data); break;
           case 'authorize': handleAuthorize(data); break;
           case 'buy': handleBuy(data); break;
           case 'error': log(`API Error [${data?.error?.code||'?'}]: ${data?.error?.message||'Unknown'}`, 'error'); break;
-          case 'forget_all': tickSubId = null; isForgetting = false; log('Ticks forgotten.', 'info'); break;
+          case 'forget_all': tickSubId = null; isForgetting = false; break;
           case 'forget': if (data.forget === tickSubId) tickSubId = null; break;
         }
       }
 
       function initiateConnection() {
-        if (!userToken) { log('No token, cannot connect.', 'error'); return; }
-        if (authTimeout) clearTimeout(authTimeout);
+        if (!userToken) { log('No token.', 'error'); return; }
         if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
         if (ws) {
           try { ws.onopen=ws.onclose=ws.onerror=ws.onmessage=null; if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) ws.close(1000); } catch(e) {}
@@ -505,24 +494,19 @@
         ws.onopen = () => {
           log('WebSocket connected.', 'success');
           setStatus('connected');
-          if (pingInterval) clearInterval(pingInterval);
+          clearPing();
           pingInterval = setInterval(() => { if (ws && ws.readyState === WebSocket.OPEN) { try { ws.send(JSON.stringify({ ping:1 })); } catch(e) { clearPing(); } } else clearPing(); }, PING_INTERVAL);
-          // send authorize immediately
+          // Send auth immediately
           send({ authorize: userToken });
-          // set a timeout: if we don't get an authorize response within 5 seconds, consider it a failure
-          authTimeout = setTimeout(() => {
-            log('Authorization timed out — no response from server.', 'error');
-            clearTokenAndShowLogin('Login failed: server did not respond. Please try again.');
-          }, 5000);
-          // after sending auth, we'll wait for response before subscribing
         };
         ws.onclose = (e) => {
-          if (authTimeout) { clearTimeout(authTimeout); authTimeout = null; }
           log(`WebSocket closed – code: ${e.code||'N/A'}`, 'warning');
           clearPing(); tickSubId = null;
-          // If we never got authorized, treat as auth failure
-          if (!isAuthorized) {
-            clearTokenAndShowLogin('Login failed. Your token may be invalid or expired.');
+          if (!isAuthorized && userToken) {
+            // Probably invalid token
+            logout();
+            authErrorMsg.textContent = 'Login failed. Please try again.';
+            authErrorMsg.classList.remove('hidden');
             return;
           }
           if (connectionStatus === 'connected' || connectionStatus === 'connecting') { setStatus('disconnected'); scheduleReconnect(); }
@@ -593,16 +577,17 @@
       function initApp() {
         currentYear.textContent = new Date().getFullYear();
         initChart();
+        updateContractUI('rise_fall');
 
-        // Check for token in URL hash (fresh from OAuth)
+        // Check for token from OAuth redirect
         if (parseHashToken()) {
           loginSection.classList.add('hidden');
           dashboardContent.classList.remove('hidden');
-          log('Token obtained from OAuth.', 'success');
+          log('Logged in via Deriv OAuth.', 'success');
           initiateConnection();
           return;
         }
-        // Check for token in sessionStorage (persisted)
+        // Check stored token
         const storedToken = sessionStorage.getItem('deriv_token');
         if (storedToken) {
           userToken = storedToken;
@@ -612,30 +597,55 @@
           initiateConnection();
           return;
         }
-        // No token – show login
+        // Show login
         loginSection.classList.remove('hidden');
         dashboardContent.classList.add('hidden');
-        log('Please log in with your Deriv account.', 'info');
+        log('Please log in.', 'info');
       }
 
-      // Event listeners
-      loginButton.addEventListener('click', () => { window.location.href = OAUTH_URL; });
-      marketSelect.addEventListener('change', () => { if (marketSelect.value) { reconnectAttempts=0; if(reconnectTimer){clearTimeout(reconnectTimer);reconnectTimer=null;} changeMarket(marketSelect.value); } });
-      clearConsoleBtn.addEventListener('click', () => { consoleLog.innerHTML = ''; consoleCounter=0; consoleEntryCount.textContent='0 entries'; log('Console cleared.'); });
+      loginButton.addEventListener('click', () => {
+        window.location.href = OAUTH_URL;
+      });
+
+      marketSelect.addEventListener('change', () => {
+        if (marketSelect.value) {
+          reconnectAttempts = 0;
+          if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
+          changeMarket(marketSelect.value);
+        }
+      });
+
+      clearConsoleBtn.addEventListener('click', () => {
+        consoleLog.innerHTML = '';
+        consoleCounter = 0;
+        consoleEntryCount.textContent = '0 entries';
+        log('Console cleared.');
+      });
+
       document.querySelectorAll('.trade-type-btn').forEach(btn => {
         btn.addEventListener('click', () => updateContractUI(btn.dataset.contract));
       });
       buyBtn1.addEventListener('click', () => placeTrade(contractTypes[currentContractType].type1));
       buyBtn2.addEventListener('click', () => placeTrade(contractTypes[currentContractType].type2));
 
-      window.addEventListener('beforeunload', () => { clearPing(); if(reconnectTimer)clearTimeout(reconnectTimer); reconnectAttempts=MAX_RECONNECT; if(ws&&ws.readyState===WebSocket.OPEN) try{ws.send(JSON.stringify({forget_all:'ticks'}));}catch(e){} });
-      document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'visible' && connectionStatus === 'disconnected' && reconnectAttempts < MAX_RECONNECT) {
-          if (userToken && (!ws || ws.readyState !== WebSocket.OPEN)) { reconnectAttempts=0; initiateConnection(); }
+      window.addEventListener('beforeunload', () => {
+        clearPing();
+        if (reconnectTimer) clearTimeout(reconnectTimer);
+        reconnectAttempts = MAX_RECONNECT;
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          try { ws.send(JSON.stringify({ forget_all: 'ticks' })); } catch(e) {}
         }
       });
 
-      updateContractUI('rise_fall');
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible' && connectionStatus === 'disconnected' && reconnectAttempts < MAX_RECONNECT) {
+          if (userToken && (!ws || ws.readyState !== WebSocket.OPEN)) {
+            reconnectAttempts = 0;
+            initiateConnection();
+          }
+        }
+      });
+
       window.addEventListener('load', initApp);
     })();
   </script>
