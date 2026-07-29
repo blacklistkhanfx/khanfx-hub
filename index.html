@@ -3,8 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Khanfx_Hub — Full Deriv Trading</title>
+  <title>Khanfx_Hub — Trading with Charts</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
   <script>
     tailwind.config = {
       theme: {
@@ -19,14 +20,6 @@
           fontFamily: {
             mono: ['JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Consolas', 'Monaco', 'monospace'],
             sans: ['Inter', 'system-ui', 'sans-serif'],
-          },
-          animation: {
-            'pulse-dot': 'pulseDot 2s ease-in-out infinite',
-            'slide-up': 'slideUp 0.25s ease-out',
-          },
-          keyframes: {
-            pulseDot: { '0%,100%': { opacity: '1', boxShadow: '0 0 0 0 rgba(16,185,129,0.7)' }, '50%': { opacity: '0.85', boxShadow: '0 0 0 8px rgba(16,185,129,0)' } },
-            slideUp: { '0%': { opacity: '0', transform: 'translateY(8px)' }, '100%': { opacity: '1', transform: 'translateY(0)' } },
           },
         },
       },
@@ -48,10 +41,12 @@
       -webkit-appearance: none; -moz-appearance: none; appearance: none;
     }
     select:focus, input:focus { box-shadow: 0 0 0 2px rgba(6,182,212,0.35); outline: none; }
+    #chart-container { width: 100%; height: 400px; }
   </style>
 </head>
 <body class="bg-surface text-slate-200 font-sans min-h-screen flex flex-col antialiased">
 
+  <!-- ========== HEADER ========== -->
   <header class="bg-card border-b border-border px-4 py-3 sm:px-6 lg:px-8 flex items-center justify-between flex-wrap gap-3 shadow-lg shadow-black/20 z-20">
     <div class="flex items-center gap-3">
       <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-accent to-accent-dim flex items-center justify-center text-white font-bold text-sm shadow-md shadow-accent/25">KH</div>
@@ -74,133 +69,137 @@
   </header>
 
   <main class="flex-1 px-4 py-5 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full space-y-5">
-    <!-- Market Selector -->
-    <section class="bg-card border border-border rounded-xl p-4 sm:p-5 shadow-lg shadow-black/15 card-hover">
-      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div>
-          <h2 class="text-sm font-semibold text-white uppercase tracking-wider mb-0.5">Market Selector</h2>
-          <p class="text-xs text-muted">Synthetic indices – real‑time tick streaming</p>
-        </div>
-        <div class="relative w-full sm:w-72">
-          <select id="marketSelect" class="w-full bg-surface border border-border text-white rounded-lg px-4 py-2.5 pr-10 text-sm font-medium focus:outline-none focus:border-accent transition-colors duration-200 cursor-pointer">
-            <option value="" disabled>— Select Market —</option>
-            <optgroup label="⚡ 1-Second Volatility Indices">
-              <option value="1HZ100V">Volatility 100 (1s)</option>
-              <option value="1HZ75V">Volatility 75 (1s)</option>
-              <option value="1HZ50V">Volatility 50 (1s)</option>
-              <option value="1HZ25V">Volatility 25 (1s)</option>
-              <option value="1HZ10V">Volatility 10 (1s)</option>
-            </optgroup>
-            <optgroup label="📊 Standard Volatility Indices">
-              <option value="R_100">Volatility 100</option>
-              <option value="R_75">Volatility 75</option>
-              <option value="R_50">Volatility 50</option>
-              <option value="R_25">Volatility 25</option>
-              <option value="R_10">Volatility 10</option>
-            </optgroup>
-          </select>
-        </div>
-      </div>
+
+    <!-- Login / Auth Section (hidden when logged in) -->
+    <section id="loginSection" class="bg-card border border-border rounded-xl p-4 sm:p-5 shadow-lg shadow-black/15 card-hover">
+      <h2 class="text-sm font-semibold text-white uppercase tracking-wider mb-3">🔐 Login to Deriv</h2>
+      <p class="text-xs text-muted mb-3">Connect your Deriv account to trade and view live charts.</p>
+      <button id="loginButton" class="px-6 py-3 bg-accent hover:bg-accent-dim text-white font-bold rounded-lg transition-colors duration-200 shadow-lg">
+        Login with Deriv
+      </button>
+      <p class="text-[10px] text-muted mt-2">You'll be redirected to Deriv to authorize this app.</p>
     </section>
 
-    <!-- Data Cards -->
-    <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-      <div class="bg-card border border-border rounded-xl p-4 sm:p-5 shadow-lg shadow-black/15 card-hover flex flex-col justify-between">
-        <div class="flex items-center justify-between mb-3">
-          <span class="text-xs font-semibold text-muted uppercase tracking-wider">Current Price</span>
-          <span id="selectedMarketBadge" class="text-[10px] bg-surface px-2 py-0.5 rounded-md text-accent font-mono border border-border/60">—</span>
-        </div>
-        <span id="currentPrice" class="text-3xl sm:text-4xl font-bold text-white font-mono tabular-nums value-transition tracking-tight">—.——</span>
-        <div id="priceChangeIndicator" class="mt-2 text-xs text-muted flex items-center gap-1 opacity-0 transition-opacity duration-200">
-          <span id="priceChangeArrow">●</span>
-          <span id="priceChangeText">Waiting for data...</span>
-        </div>
-      </div>
-      <div class="bg-card border border-border rounded-xl p-4 sm:p-5 shadow-lg shadow-black/15 card-hover flex flex-col items-center justify-center text-center">
-        <span class="text-xs font-semibold text-muted uppercase tracking-wider mb-3">Last Digit</span>
-        <span id="lastDigit" class="text-6xl sm:text-7xl font-black text-accent font-mono tabular-nums value-transition leading-none" style="text-shadow: 0 0 40px rgba(6,182,212,0.5);">—</span>
-        <span class="text-[10px] text-muted mt-2">Extracted from tick quote</span>
-      </div>
-      <div class="bg-card border border-border rounded-xl p-4 sm:p-5 shadow-lg shadow-black/15 card-hover flex flex-col justify-between">
-        <span class="text-xs font-semibold text-muted uppercase tracking-wider mb-3">Session Change</span>
-        <span id="sessionProfit" class="text-3xl sm:text-4xl font-bold font-mono tabular-nums value-transition tracking-tight text-white">0.00</span>
-        <div class="mt-2 flex items-center gap-2">
-          <span id="sessionProfitPercent" class="text-xs text-muted font-mono">0.00%</span>
-          <span id="sessionTicksCount" class="text-[10px] text-muted bg-surface/60 px-2 py-0.5 rounded-full">0 ticks</span>
-        </div>
-      </div>
-    </section>
+    <!-- Main Dashboard (hidden before login) -->
+    <div id="dashboardContent" class="hidden space-y-5">
 
-    <!-- ===== FULL TRADING PANEL ===== -->
-    <section class="bg-card border border-border rounded-xl p-4 sm:p-5 shadow-lg shadow-black/15 card-hover">
-      <div class="flex items-center justify-between mb-4">
-        <h2 class="text-sm font-semibold text-white uppercase tracking-wider">⚡ Trade Contracts</h2>
-        <span class="text-[10px] text-muted">All deriv options</span>
-      </div>
-
-      <!-- Token row -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
-        <div class="lg:col-span-2">
-          <label class="text-xs text-muted block mb-1">Deriv API Token</label>
-          <div class="flex gap-2">
-            <!-- ✅ YOUR TOKEN PRE‑FILLED -->
-            <input id="apiTokenInput" type="password" value="pat_d434f09503fb6a7b0586722ca2823da01fdda27ebbe3dc347151d186a033406"
-              class="flex-1 bg-surface border border-border rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-accent">
-            <button id="authorizeBtn" class="px-4 py-2 bg-accent hover:bg-accent-dim text-white text-sm font-semibold rounded-lg transition-colors duration-200">Authorize</button>
+      <!-- Market Selector -->
+      <section class="bg-card border border-border rounded-xl p-4 sm:p-5 shadow-lg shadow-black/15 card-hover">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div>
+            <h2 class="text-sm font-semibold text-white uppercase tracking-wider mb-0.5">Market Selector</h2>
+            <p class="text-xs text-muted">Synthetic indices – real‑time tick streaming</p>
           </div>
-          <span id="authStatus" class="text-[10px] text-muted mt-1 block">Auto‑authorizing on connect…</span>
+          <div class="relative w-full sm:w-72">
+            <select id="marketSelect" class="w-full bg-surface border border-border text-white rounded-lg px-4 py-2.5 pr-10 text-sm font-medium focus:outline-none focus:border-accent transition-colors duration-200 cursor-pointer">
+              <option value="" disabled>— Select Market —</option>
+              <optgroup label="⚡ 1-Second Volatility Indices">
+                <option value="1HZ100V">Volatility 100 (1s)</option>
+                <option value="1HZ75V">Volatility 75 (1s)</option>
+                <option value="1HZ50V">Volatility 50 (1s)</option>
+                <option value="1HZ25V">Volatility 25 (1s)</option>
+                <option value="1HZ10V">Volatility 10 (1s)</option>
+              </optgroup>
+              <optgroup label="📊 Standard Volatility Indices">
+                <option value="R_100">Volatility 100</option>
+                <option value="R_75">Volatility 75</option>
+                <option value="R_50">Volatility 50</option>
+                <option value="R_25">Volatility 25</option>
+                <option value="R_10">Volatility 10</option>
+              </optgroup>
+            </select>
+          </div>
         </div>
-      </div>
+      </section>
 
-      <!-- Contract type selector -->
-      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 mb-4">
-        <button data-contract="rise_fall" class="trade-type-btn bg-surface border border-border rounded-lg px-3 py-2 text-xs font-medium hover:border-accent transition-colors active-tab">Rise / Fall</button>
-        <button data-contract="digits" class="trade-type-btn bg-surface border border-border rounded-lg px-3 py-2 text-xs font-medium hover:border-accent transition-colors">Digits</button>
-        <button data-contract="over_under" class="trade-type-btn bg-surface border border-border rounded-lg px-3 py-2 text-xs font-medium hover:border-accent transition-colors">Over / Under</button>
-        <button data-contract="even_odd" class="trade-type-btn bg-surface border border-border rounded-lg px-3 py-2 text-xs font-medium hover:border-accent transition-colors">Even / Odd</button>
-        <button data-contract="high_low" class="trade-type-btn bg-surface border border-border rounded-lg px-3 py-2 text-xs font-medium hover:border-accent transition-colors">High / Low</button>
-        <button data-contract="asian" class="trade-type-btn bg-surface border border-border rounded-lg px-3 py-2 text-xs font-medium hover:border-accent transition-colors">Asian Up/Down</button>
-        <button data-contract="reset" class="trade-type-btn bg-surface border border-border rounded-lg px-3 py-2 text-xs font-medium hover:border-accent transition-colors">Reset Call/Put</button>
-        <button data-contract="accumulator" class="trade-type-btn bg-surface border border-border rounded-lg px-3 py-2 text-xs font-medium hover:border-accent transition-colors">Accumulator (Beta)</button>
-      </div>
+      <!-- Chart -->
+      <section class="bg-card border border-border rounded-xl p-4 sm:p-5 shadow-lg shadow-black/15 card-hover">
+        <h2 class="text-sm font-semibold text-white uppercase tracking-wider mb-3">📈 Price Chart</h2>
+        <div id="chart-container"></div>
+      </section>
 
-      <!-- Contract‑specific parameters -->
-      <div id="contractParams" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-4"></div>
+      <!-- Data Cards -->
+      <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div class="bg-card border border-border rounded-xl p-4 sm:p-5 shadow-lg shadow-black/15 card-hover flex flex-col justify-between">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-xs font-semibold text-muted uppercase tracking-wider">Current Price</span>
+            <span id="selectedMarketBadge" class="text-[10px] bg-surface px-2 py-0.5 rounded-md text-accent font-mono border border-border/60">—</span>
+          </div>
+          <span id="currentPrice" class="text-3xl sm:text-4xl font-bold text-white font-mono tabular-nums value-transition tracking-tight">—.——</span>
+          <div id="priceChangeIndicator" class="mt-2 text-xs text-muted flex items-center gap-1 opacity-0 transition-opacity duration-200">
+            <span id="priceChangeArrow">●</span>
+            <span id="priceChangeText">Waiting for data...</span>
+          </div>
+        </div>
+        <div class="bg-card border border-border rounded-xl p-4 sm:p-5 shadow-lg shadow-black/15 card-hover flex flex-col items-center justify-center text-center">
+          <span class="text-xs font-semibold text-muted uppercase tracking-wider mb-3">Last Digit</span>
+          <span id="lastDigit" class="text-6xl sm:text-7xl font-black text-accent font-mono tabular-nums value-transition leading-none" style="text-shadow: 0 0 40px rgba(6,182,212,0.5);">—</span>
+          <span class="text-[10px] text-muted mt-2">Extracted from tick quote</span>
+        </div>
+        <div class="bg-card border border-border rounded-xl p-4 sm:p-5 shadow-lg shadow-black/15 card-hover flex flex-col justify-between">
+          <span class="text-xs font-semibold text-muted uppercase tracking-wider mb-3">Session Change</span>
+          <span id="sessionProfit" class="text-3xl sm:text-4xl font-bold font-mono tabular-nums value-transition tracking-tight text-white">0.00</span>
+          <div class="mt-2 flex items-center gap-2">
+            <span id="sessionProfitPercent" class="text-xs text-muted font-mono">0.00%</span>
+            <span id="sessionTicksCount" class="text-[10px] text-muted bg-surface/60 px-2 py-0.5 rounded-full">0 ticks</span>
+          </div>
+        </div>
+      </section>
 
-      <!-- Stake, Duration & Buy Buttons -->
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
-        <div>
-          <label class="text-xs text-muted block mb-1">Stake (USD)</label>
-          <input id="stakeInput" type="number" value="1" min="0.35" step="0.01" class="w-full bg-surface border border-border rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-accent">
+      <!-- TRADING PANEL -->
+      <section class="bg-card border border-border rounded-xl p-4 sm:p-5 shadow-lg shadow-black/15 card-hover">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-sm font-semibold text-white uppercase tracking-wider">⚡ Trade Contracts</h2>
+          <span class="text-[10px] text-muted">All deriv options</span>
         </div>
-        <div>
-          <label class="text-xs text-muted block mb-1">Duration</label>
-          <input id="durationInput" type="number" value="5" min="1" step="1" class="w-full bg-surface border border-border rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-accent">
+        <!-- Contract type selector -->
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 mb-4">
+          <button data-contract="rise_fall" class="trade-type-btn bg-surface border border-border rounded-lg px-3 py-2 text-xs font-medium hover:border-accent transition-colors active-tab">Rise / Fall</button>
+          <button data-contract="digits" class="trade-type-btn bg-surface border border-border rounded-lg px-3 py-2 text-xs font-medium hover:border-accent transition-colors">Digits</button>
+          <button data-contract="over_under" class="trade-type-btn bg-surface border border-border rounded-lg px-3 py-2 text-xs font-medium hover:border-accent transition-colors">Over / Under</button>
+          <button data-contract="even_odd" class="trade-type-btn bg-surface border border-border rounded-lg px-3 py-2 text-xs font-medium hover:border-accent transition-colors">Even / Odd</button>
+          <button data-contract="high_low" class="trade-type-btn bg-surface border border-border rounded-lg px-3 py-2 text-xs font-medium hover:border-accent transition-colors">High / Low</button>
+          <button data-contract="asian" class="trade-type-btn bg-surface border border-border rounded-lg px-3 py-2 text-xs font-medium hover:border-accent transition-colors">Asian Up/Down</button>
+          <button data-contract="reset" class="trade-type-btn bg-surface border border-border rounded-lg px-3 py-2 text-xs font-medium hover:border-accent transition-colors">Reset Call/Put</button>
+          <button data-contract="accumulator" class="trade-type-btn bg-surface border border-border rounded-lg px-3 py-2 text-xs font-medium hover:border-accent transition-colors">Accumulator (Beta)</button>
         </div>
-        <div class="flex items-end gap-2">
-          <button id="buyBtn1" class="flex-1 bg-positive hover:bg-green-600 text-white font-bold py-3 rounded-lg transition-colors duration-200 text-sm uppercase tracking-wider shadow-lg">▲ Buy</button>
-          <button id="buyBtn2" class="flex-1 bg-negative hover:bg-red-600 text-white font-bold py-3 rounded-lg transition-colors duration-200 text-sm uppercase tracking-wider shadow-lg">▼ Buy</button>
+        <!-- Contract‑specific parameters -->
+        <div id="contractParams" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-4"></div>
+        <!-- Stake, Duration & Buy Buttons -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
+          <div>
+            <label class="text-xs text-muted block mb-1">Stake (USD)</label>
+            <input id="stakeInput" type="number" value="1" min="0.35" step="0.01" class="w-full bg-surface border border-border rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-accent">
+          </div>
+          <div>
+            <label class="text-xs text-muted block mb-1">Duration</label>
+            <input id="durationInput" type="number" value="5" min="1" step="1" class="w-full bg-surface border border-border rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-accent">
+          </div>
+          <div class="flex items-end gap-2">
+            <button id="buyBtn1" class="flex-1 bg-positive hover:bg-green-600 text-white font-bold py-3 rounded-lg transition-colors duration-200 text-sm uppercase tracking-wider shadow-lg">▲ Buy</button>
+            <button id="buyBtn2" class="flex-1 bg-negative hover:bg-red-600 text-white font-bold py-3 rounded-lg transition-colors duration-200 text-sm uppercase tracking-wider shadow-lg">▼ Buy</button>
+          </div>
         </div>
-      </div>
-      <div id="tradeResult" class="text-xs text-muted hidden"></div>
-    </section>
+        <div id="tradeResult" class="text-xs text-muted hidden"></div>
+      </section>
 
-    <!-- Console -->
-    <section class="bg-card border border-border rounded-xl shadow-lg shadow-black/15 overflow-hidden card-hover">
-      <div class="flex items-center justify-between px-4 py-3 border-b border-border bg-surface/40">
-        <div class="flex items-center gap-2">
-          <span class="w-2 h-2 rounded-full bg-positive animate-pulse-dot"></span>
-          <h2 class="text-sm font-semibold text-white uppercase tracking-wider">Execution Console</h2>
+      <!-- Console -->
+      <section class="bg-card border border-border rounded-xl shadow-lg shadow-black/15 overflow-hidden card-hover">
+        <div class="flex items-center justify-between px-4 py-3 border-b border-border bg-surface/40">
+          <div class="flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-positive animate-pulse-dot"></span>
+            <h2 class="text-sm font-semibold text-white uppercase tracking-wider">Execution Console</h2>
+          </div>
+          <div class="flex items-center gap-2">
+            <span id="consoleEntryCount" class="text-[10px] text-muted font-mono">0 entries</span>
+            <button id="clearConsoleBtn" class="text-[10px] text-muted hover:text-white bg-surface/60 hover:bg-surface px-2.5 py-1 rounded-md border border-border/40 transition-colors duration-150 uppercase tracking-wider">Clear</button>
+          </div>
         </div>
-        <div class="flex items-center gap-2">
-          <span id="consoleEntryCount" class="text-[10px] text-muted font-mono">0 entries</span>
-          <button id="clearConsoleBtn" class="text-[10px] text-muted hover:text-white bg-surface/60 hover:bg-surface px-2.5 py-1 rounded-md border border-border/40 transition-colors duration-150 uppercase tracking-wider">Clear</button>
+        <div id="consoleLog" class="console-scroll bg-console-bg text-console-text font-mono text-xs leading-relaxed p-4 h-56 sm:h-64 overflow-y-auto space-y-0.5">
+          <div class="text-console-info opacity-70">[System] Console initialized…</div>
         </div>
-      </div>
-      <div id="consoleLog" class="console-scroll bg-console-bg text-console-text font-mono text-xs leading-relaxed p-4 h-56 sm:h-64 overflow-y-auto space-y-0.5">
-        <div class="text-console-info opacity-70">[System] Console initialized…</div>
-      </div>
-    </section>
+      </section>
+    </div>
   </main>
 
   <footer class="bg-card border-t border-border px-4 py-2.5 text-center text-[10px] text-muted tracking-wide">
@@ -209,14 +208,16 @@
 
   <script>
     (function() {
-      // ====================== YOUR OWN APP ID ======================
+      // ====================== CONFIGURATION ======================
       const APP_ID = '33qUaFT0pPP4bUDrITabh';
       const WS_ENDPOINT = `wss://ws.derivws.com/websockets/v3?app_id=${APP_ID}`;
+      const REDIRECT_URI = window.location.origin + window.location.pathname; // GitHub Pages URL
+      const OAUTH_URL = `https://oauth.deriv.com/oauth2/authorize?app_id=${APP_ID}&l=en&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&response_type=token&state=kh`;
       const RECONNECT_DELAY = 3000;
       const MAX_RECONNECT = 15;
       const PING_INTERVAL = 30000;
+      const CANDLE_INTERVAL_SEC = 1; // aggregate into 1-second candles
 
-      // Market mapping
       const SYMBOL_NAMES = {
         '1HZ100V':'Volatility 100 (1s)','1HZ75V':'Volatility 75 (1s)','1HZ50V':'Volatility 50 (1s)','1HZ25V':'Volatility 25 (1s)','1HZ10V':'Volatility 10 (1s)',
         'R_100':'Volatility 100','R_75':'Volatility 75','R_50':'Volatility 50','R_25':'Volatility 25','R_10':'Volatility 10'
@@ -224,6 +225,8 @@
 
       // DOM refs
       const $ = id => document.getElementById(id);
+      const loginSection = $('loginSection'), loginButton = $('loginButton');
+      const dashboardContent = $('dashboardContent');
       const statusDot = $('statusDot'), statusLabel = $('statusLabel'), accountBalance = $('accountBalance');
       const marketSelect = $('marketSelect'), selectedMarketBadge = $('selectedMarketBadge');
       const currentPrice = $('currentPrice'), priceChangeIndicator = $('priceChangeIndicator');
@@ -232,7 +235,6 @@
       const sessionProfitPercent = $('sessionProfitPercent'), sessionTicksCount = $('sessionTicksCount');
       const consoleLog = $('consoleLog'), consoleEntryCount = $('consoleEntryCount');
       const clearConsoleBtn = $('clearConsoleBtn'), currentYear = $('currentYear');
-      const apiTokenInput = $('apiTokenInput'), authorizeBtn = $('authorizeBtn'), authStatus = $('authStatus');
       const stakeInput = $('stakeInput'), durationInput = $('durationInput');
       const buyBtn1 = $('buyBtn1'), buyBtn2 = $('buyBtn2'), tradeResult = $('tradeResult');
       const contractParams = $('contractParams');
@@ -243,8 +245,95 @@
       let tickSubId = null, firstTickPrice = null, prevTickPrice = null, sessionTicks = 0;
       let consoleCounter = 0, tickLogCounter = 0, isForgetting = false, isAuthorized = false;
       let currentContractType = 'rise_fall';
+      let userToken = null;
 
-      // Helper: log to console
+      // Chart variables
+      let chart = null, candleSeries = null;
+      let currentCandle = null; // open, high, low, close, time (unix)
+      let lastCandleTime = null;
+      let chartReady = false;
+
+      // ---------- Chart Initialization ----------
+      function initChart() {
+        if (chart) return;
+        chart = LightweightCharts.createChart(document.getElementById('chart-container'), {
+          layout: {
+            background: { color: '#1e293b' },
+            textColor: '#94a3b8',
+          },
+          grid: {
+            vertLines: { color: '#334155' },
+            horzLines: { color: '#334155' },
+          },
+          crosshair: { mode: 0 },
+          timeScale: { timeVisible: true, secondsVisible: true },
+        });
+        candleSeries = chart.addCandlestickSeries({
+          upColor: '#10b981',
+          downColor: '#ef4444',
+          borderDownColor: '#ef4444',
+          borderUpColor: '#10b981',
+          wickDownColor: '#ef4444',
+          wickUpColor: '#10b981',
+        });
+        chartReady = true;
+      }
+
+      function resetChart() {
+        if (candleSeries) {
+          candleSeries.setData([]);
+        }
+        currentCandle = null;
+        lastCandleTime = null;
+      }
+
+      function updateChartFromTick(price, tickTime) {
+        if (!chartReady || !candleSeries) return;
+        // tickTime is a Unix timestamp in seconds from Deriv (epoch)
+        const time = tickTime || Math.floor(Date.now() / 1000);
+        // round to candle interval
+        const candleTime = Math.floor(time / CANDLE_INTERVAL_SEC) * CANDLE_INTERVAL_SEC;
+        if (!currentCandle || candleTime > lastCandleTime) {
+          // finalize previous candle if exists
+          if (currentCandle) {
+            candleSeries.update(currentCandle);
+          }
+          // start new candle
+          currentCandle = { time: candleTime, open: price, high: price, low: price, close: price };
+          lastCandleTime = candleTime;
+          candleSeries.update(currentCandle);
+        } else {
+          // update current candle
+          currentCandle.high = Math.max(currentCandle.high, price);
+          currentCandle.low = Math.min(currentCandle.low, price);
+          currentCandle.close = price;
+          candleSeries.update(currentCandle);
+        }
+      }
+
+      // ---------- Auth ----------
+      function parseHashToken() {
+        const hash = window.location.hash.substring(1);
+        const params = new URLSearchParams(hash);
+        const token = params.get('access_token') || params.get('token1'); // Deriv returns access_token
+        if (token) {
+          userToken = token;
+          // Save to localStorage for persistence
+          localStorage.setItem('deriv_token', userToken);
+          // Clear hash to avoid reuse
+          history.replaceState(null, '', window.location.pathname + window.location.search);
+          return true;
+        }
+        return false;
+      }
+
+      function logout() {
+        userToken = null;
+        localStorage.removeItem('deriv_token');
+        location.reload();
+      }
+
+      // ---------- Logging ----------
       function log(msg, type='info') {
         const time = new Date().toLocaleTimeString('en-GB', {hour12:false, hour:'2-digit', minute:'2-digit', second:'2-digit'});
         const colors = {info:'text-console-info', success:'text-console-text', warning:'text-console-warn', error:'text-console-error', tick:'text-console-text opacity-60'};
@@ -259,29 +348,23 @@
         while (consoleLog.children.length > 500) consoleLog.removeChild(consoleLog.firstChild);
       }
 
-      function clearConsole() { consoleLog.innerHTML = ''; consoleCounter = 0; consoleEntryCount.textContent = '0 entries'; log('Console cleared.'); }
-      function clearPing() { if (pingInterval) { clearInterval(pingInterval); pingInterval = null; } }
-
+      // ---------- WebSocket ----------
       function setStatus(status) {
         connectionStatus = status;
         statusDot.classList.remove('bg-red-500','bg-yellow-500','bg-green-500','animate-pulse-dot');
         if (status === 'connected') {
           statusDot.classList.add('bg-green-500','animate-pulse-dot');
-          statusLabel.textContent = 'Connected';
-          statusLabel.className = 'text-xs sm:text-sm font-medium text-positive tracking-wide uppercase';
+          statusLabel.textContent = 'Connected'; statusLabel.className = 'text-xs sm:text-sm font-medium text-positive tracking-wide uppercase';
           reconnectAttempts = 0;
         } else if (status === 'connecting') {
           statusDot.classList.add('bg-yellow-500');
-          statusLabel.textContent = 'Connecting...';
-          statusLabel.className = 'text-xs sm:text-sm font-medium text-warning tracking-wide uppercase';
+          statusLabel.textContent = 'Connecting...'; statusLabel.className = 'text-xs sm:text-sm font-medium text-warning tracking-wide uppercase';
         } else if (status === 'reconnecting') {
           statusDot.classList.add('bg-yellow-500');
-          statusLabel.textContent = `Reconnecting (${reconnectAttempts}/${MAX_RECONNECT})`;
-          statusLabel.className = 'text-xs sm:text-sm font-medium text-warning tracking-wide uppercase';
+          statusLabel.textContent = `Reconnecting (${reconnectAttempts}/${MAX_RECONNECT})`; statusLabel.className = 'text-xs sm:text-sm font-medium text-warning tracking-wide uppercase';
         } else {
           statusDot.classList.add('bg-red-500');
-          statusLabel.textContent = 'Offline';
-          statusLabel.className = 'text-xs sm:text-sm font-medium text-negative tracking-wide uppercase';
+          statusLabel.textContent = 'Offline'; statusLabel.className = 'text-xs sm:text-sm font-medium text-negative tracking-wide uppercase';
         }
       }
 
@@ -292,6 +375,7 @@
         priceChangeIndicator.classList.add('opacity-0');
         currentPrice.textContent = '—.——'; lastDigit.textContent = '—';
         lastDigit.style.textShadow = '0 0 40px rgba(6,182,212,0.5)';
+        resetChart();
       }
 
       function send(msg) {
@@ -359,6 +443,10 @@
         prevTickPrice = price;
         tickLogCounter++;
         if (tickLogCounter % 25 === 0 || sessionTicks <= 3) log(`Tick #${sessionTicks} | ${tick.symbol||activeSymbol} | ${q} | last: ${last}`, 'tick');
+
+        // Update chart
+        const epoch = tick.epoch ? parseInt(tick.epoch) : Math.floor(Date.now()/1000);
+        updateChartFromTick(price, epoch);
       }
 
       function handleError(err) { log(`API Error [${err?.code||'?'}]: ${err?.message||'Unknown'}`, 'error'); }
@@ -372,19 +460,11 @@
       function handleAuthorize(data) {
         if (data?.error) {
           isAuthorized = false;
-          authStatus.textContent = `❌ ${data.error.message}`;
-          authStatus.className = 'text-negative text-[10px] mt-1';
           log(`Authorization error: ${data.error.message}`, 'error');
         } else if (data?.authorize) {
           isAuthorized = true;
-          authStatus.textContent = '✅ Authorized';
-          authStatus.className = 'text-positive text-[10px] mt-1';
           log('Token authorized.', 'success');
           send({ balance: 1, subscribe: 1 });
-        } else {
-          isAuthorized = false;
-          authStatus.textContent = '❌ Authorization failed (unknown)';
-          authStatus.className = 'text-negative text-[10px] mt-1';
         }
       }
 
@@ -415,11 +495,11 @@
           case 'error': handleError(data?.error || { message: data?.error?.message || 'Unknown' }); break;
           case 'forget_all': tickSubId = null; isForgetting = false; log('Ticks forgotten.', 'info'); break;
           case 'forget': if (data.forget === tickSubId) tickSubId = null; break;
-          case 'website_status': log(`Deriv status: ${data.website_status?.message||'OK'}`, 'info'); break;
         }
       }
 
       function initiateConnection() {
+        if (!userToken) { log('No token, cannot connect.', 'error'); return; }
         clearPing();
         if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
         if (ws) {
@@ -428,15 +508,14 @@
         }
         setStatus('connecting');
         log(`Connecting… (attempt ${reconnectAttempts+1})`, 'info');
-        try { ws = new WebSocket(WS_ENDPOINT); } catch(e) { log(`WS constructor error: ${e.message}`, 'error'); setStatus('disconnected'); scheduleReconnect(); return; }
+        try { ws = new WebSocket(WS_ENDPOINT); } catch(e) { log(`WS error: ${e.message}`, 'error'); setStatus('disconnected'); scheduleReconnect(); return; }
         ws.onopen = () => {
           log('WebSocket connected.', 'success');
           setStatus('connected');
           clearPing();
           pingInterval = setInterval(() => { if (ws && ws.readyState === WebSocket.OPEN) { try { ws.send(JSON.stringify({ ping:1 })); } catch(e) { clearPing(); } } else clearPing(); }, PING_INTERVAL);
-          const token = apiTokenInput.value.trim();
-          if (token && !isAuthorized) { log('Auto‑authorizing…', 'info'); send({ authorize: token }); }
-          else if (!token) send({ balance: 1, subscribe: 1 });
+          // authorize
+          send({ authorize: userToken });
           if (pendingSymbol) { const s = pendingSymbol; pendingSymbol = null; subscribe(s); }
           else if (!activeSymbol) subscribe('1HZ100V');
           else if (activeSymbol && !isForgetting) subscribe(activeSymbol);
@@ -456,13 +535,13 @@
       function scheduleReconnect() {
         clearPing();
         if (reconnectTimer) clearTimeout(reconnectTimer);
-        if (reconnectAttempts >= MAX_RECONNECT) { log('Max reconnect attempts reached.', 'error'); setStatus('disconnected'); return; }
+        if (reconnectAttempts >= MAX_RECONNECT) { log('Max reconnect attempts.', 'error'); setStatus('disconnected'); return; }
         reconnectAttempts++;
         setStatus('reconnecting');
         reconnectTimer = setTimeout(() => { reconnectTimer = null; initiateConnection(); }, RECONNECT_DELAY);
       }
 
-      // Contract UI mapping
+      // ---------- Trading UI ----------
       const contractTypes = {
         rise_fall: { label1:'CALL (Rise)', label2:'PUT (Fall)', type1:'CALL', type2:'PUT', params:'' },
         digits: { label1:'Digit Match', label2:'Digit Diff', type1:'DIGITMATCH', type2:'DIGITDIFF', params:'<div class="lg:col-span-2"><label class="text-xs text-muted">Digit</label><input id="digitParam" type="number" value="5" min="0" max="9" class="w-full bg-surface border border-border rounded-lg px-3 py-2 text-sm text-white"></div>' },
@@ -506,37 +585,59 @@
         tradeResult.classList.add('hidden');
       }
 
-      // Event listeners
-      marketSelect.addEventListener('change', () => { if (marketSelect.value) { reconnectAttempts=0; if(reconnectTimer){clearTimeout(reconnectTimer);reconnectTimer=null;} changeMarket(marketSelect.value); } });
-      clearConsoleBtn.addEventListener('click', clearConsole);
-      authorizeBtn.addEventListener('click', () => {
-        const token = apiTokenInput.value.trim();
-        if (!token) { alert('Enter token'); return; }
-        if (ws && ws.readyState === WebSocket.OPEN) send({ authorize: token });
-        else alert('Not connected.');
-      });
-      buyBtn1.addEventListener('click', () => placeTrade(contractTypes[currentContractType].type1));
-      buyBtn2.addEventListener('click', () => placeTrade(contractTypes[currentContractType].type2));
+      // ---------- Initialization ----------
+      function initApp() {
+        currentYear.textContent = new Date().getFullYear();
+        initChart();
 
-      document.querySelectorAll('.trade-type-btn').forEach(btn => {
-        btn.addEventListener('click', () => updateContractUI(btn.dataset.contract));
-      });
-
-      window.addEventListener('beforeunload', () => { clearPing(); if(reconnectTimer)clearTimeout(reconnectTimer); reconnectAttempts=MAX_RECONNECT; if(ws&&ws.readyState===WebSocket.OPEN) try{ws.send(JSON.stringify({forget_all:'ticks'}));}catch(e){} });
-      document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'visible' && connectionStatus === 'disconnected' && reconnectAttempts < MAX_RECONNECT) {
-          if (!ws || ws.readyState !== WebSocket.OPEN) { reconnectAttempts=0; initiateConnection(); }
+        // Check for token in URL hash or localStorage
+        if (parseHashToken()) {
+          // token found in hash
+        } else if (localStorage.getItem('deriv_token')) {
+          userToken = localStorage.getItem('deriv_token');
         }
-      });
 
-      // Init
-      currentYear.textContent = new Date().getFullYear();
-      setStatus('disconnected');
-      updateContractUI('rise_fall');
-      log('🚀 Khanfx_Hub — Full Deriv Trading Ready');
-      log(`App ID: ${APP_ID}`, 'info');
-      log('Token pre‑configured – auto‑authorizing on connect.', 'info');
-      initiateConnection();
+        if (userToken) {
+          // Hide login, show dashboard
+          loginSection.classList.add('hidden');
+          dashboardContent.classList.remove('hidden');
+          log('Token found, connecting…', 'info');
+          initiateConnection();
+        } else {
+          // Show login
+          loginSection.classList.remove('hidden');
+          dashboardContent.classList.add('hidden');
+          log('Please log in with your Deriv account.', 'info');
+        }
+
+        // Login button event
+        loginButton.addEventListener('click', () => {
+          window.location.href = OAUTH_URL;
+        });
+
+        // Market selector
+        marketSelect.addEventListener('change', () => { if (marketSelect.value) { reconnectAttempts=0; if(reconnectTimer){clearTimeout(reconnectTimer);reconnectTimer=null;} changeMarket(marketSelect.value); } });
+        clearConsoleBtn.addEventListener('click', () => { consoleLog.innerHTML = ''; consoleCounter=0; consoleEntryCount.textContent='0 entries'; log('Console cleared.'); });
+
+        // Trading buttons
+        document.querySelectorAll('.trade-type-btn').forEach(btn => {
+          btn.addEventListener('click', () => updateContractUI(btn.dataset.contract));
+        });
+        buyBtn1.addEventListener('click', () => placeTrade(contractTypes[currentContractType].type1));
+        buyBtn2.addEventListener('click', () => placeTrade(contractTypes[currentContractType].type2));
+
+        window.addEventListener('beforeunload', () => { clearPing(); if(reconnectTimer)clearTimeout(reconnectTimer); reconnectAttempts=MAX_RECONNECT; if(ws&&ws.readyState===WebSocket.OPEN) try{ws.send(JSON.stringify({forget_all:'ticks'}));}catch(e){} });
+        document.addEventListener('visibilitychange', () => {
+          if (document.visibilityState === 'visible' && connectionStatus === 'disconnected' && reconnectAttempts < MAX_RECONNECT) {
+            if (!ws || ws.readyState !== WebSocket.OPEN) { reconnectAttempts=0; initiateConnection(); }
+          }
+        });
+
+        // Set initial contract UI
+        updateContractUI('rise_fall');
+      }
+
+      window.addEventListener('load', initApp);
     })();
   </script>
 </body>
