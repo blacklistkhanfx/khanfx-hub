@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Khanfx Hub — Trading Dashboard</title>
+    <title>Khanfx_Hub — Trading Dashboard</title>
     <script src="https://cdn.tailwindcss.com">
     </script>
     <script>
@@ -75,8 +75,8 @@
         <div class="flex items-center gap-3">
             <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-accent to-accent-dim flex items-center justify-center text-white font-bold text-sm shadow-md shadow-accent/25">KH</div>
             <div>
-                <h1 class="text-lg sm:text-xl font-bold tracking-tight text-white leading-tight">Khanfx Hub</h1>
-                <span class="text-xs text-muted tracking-wide">Synthetic Indices Monitor</span>
+                <h1 class="text-lg sm:text-xl font-bold tracking-tight text-white leading-tight">Khanfx_Hub</h1>
+                <span class="text-xs text-muted tracking-wide">Synthetic Indices Trading</span>
             </div>
         </div>
         <div class="flex items-center gap-4 sm:gap-6 flex-wrap">
@@ -94,6 +94,8 @@
 
     <!-- ========== MAIN CONTENT ========== -->
     <main class="flex-1 px-4 py-5 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full space-y-5">
+
+        <!-- Control Panel -->
         <section class="bg-card border border-border rounded-xl p-4 sm:p-5 shadow-lg shadow-black/15 card-hover">
             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div>
@@ -123,6 +125,7 @@
         </div>
     </section>
 
+    <!-- Data Cards -->
     <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <div class="bg-card border border-border rounded-xl p-4 sm:p-5 shadow-lg shadow-black/15 card-hover flex flex-col justify-between">
             <div class="flex items-center justify-between mb-3">
@@ -154,25 +157,73 @@
         </div>
     </section>
 
-    <section class="bg-card border border-border rounded-xl shadow-lg shadow-black/15 overflow-hidden card-hover">
-        <div class="flex items-center justify-between px-4 py-3 border-b border-border bg-surface/40">
-            <div class="flex items-center gap-2">
-                <span class="w-2 h-2 rounded-full bg-positive animate-pulse-dot"></span>
-                <h2 class="text-sm font-semibold text-white uppercase tracking-wider">Execution Console</h2>
-            </div>
-            <div class="flex items-center gap-2">
-                <span id="consoleEntryCount" class="text-[10px] text-muted font-mono">0 entries</span>
-                <button id="clearConsoleBtn" class="text-[10px] text-muted hover:text-white bg-surface/60 hover:bg-surface px-2.5 py-1 rounded-md border border-border/40 transition-colors duration-150 uppercase tracking-wider">Clear</button>
-            </div>
+    <!-- TRADING PANEL -->
+    <section class="bg-card border border-border rounded-xl p-4 sm:p-5 shadow-lg shadow-black/15 card-hover">
+        <div class="flex items-center justify-between mb-3">
+            <h2 class="text-sm font-semibold text-white uppercase tracking-wider">⚡ Place Trade</h2>
+            <span class="text-[10px] text-muted">Rise / Fall contracts</span>
         </div>
-        <div id="consoleLog" class="console-scroll bg-console-bg text-console-text font-mono text-xs leading-relaxed p-4 h-56 sm:h-64 overflow-y-auto space-y-0.5">
-            <div class="text-console-info opacity-70">[System] Console initialized. Awaiting WebSocket connection...</div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+            <!-- API Token (pre-filled and auto-authorizing) -->
+            <div class="lg:col-span-2">
+                <label class="text-xs text-muted block mb-1">Deriv API Token</label>
+                <div class="flex gap-2">
+                    <input id="apiTokenInput" type="password" value="pat_d434f09503fb6a7b0586722ca2823da01fdda27ebbe3dc347151d186a033406"
+                    class="flex-1 bg-surface border border-border rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-accent">
+                    <button id="authorizeBtn"
+                    class="px-4 py-2 bg-accent hover:bg-accent-dim text-white text-sm font-semibold rounded-lg transition-colors duration-200">
+                    Authorize
+                </button>
+            </div>
+            <span id="authStatus" class="text-[10px] text-muted mt-1 block lg:col-span-2">Auto‑authorizing on connect…</span>
         </div>
-    </section>
+        <!-- Stake -->
+        <div>
+            <label class="text-xs text-muted block mb-1">Stake (USD)</label>
+            <input id="stakeInput" type="number" value="1" min="0.35" step="0.01"
+            class="w-full bg-surface border border-border rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-accent">
+        </div>
+        <!-- Duration -->
+        <div>
+            <label class="text-xs text-muted block mb-1">Duration (ticks)</label>
+            <input id="durationInput" type="number" value="5" min="1" max="10" step="1"
+            class="w-full bg-surface border border-border rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-accent">
+        </div>
+        <!-- Contract Type -->
+        <div class="flex items-end gap-3">
+            <button id="buyCallBtn"
+            class="flex-1 bg-positive hover:bg-green-600 text-white font-bold py-3 rounded-lg transition-colors duration-200 text-sm uppercase tracking-wider shadow-lg">
+            ▲ Call (Rise)
+        </button>
+        <button id="buyPutBtn"
+        class="flex-1 bg-negative hover:bg-red-600 text-white font-bold py-3 rounded-lg transition-colors duration-200 text-sm uppercase tracking-wider shadow-lg">
+        ▼ Put (Fall)
+    </button>
+</div>
+</div>
+<div id="tradeResult" class="mt-3 text-xs text-muted hidden"></div>
+</section>
+
+<!-- Execution Console -->
+<section class="bg-card border border-border rounded-xl shadow-lg shadow-black/15 overflow-hidden card-hover">
+    <div class="flex items-center justify-between px-4 py-3 border-b border-border bg-surface/40">
+        <div class="flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-positive animate-pulse-dot"></span>
+            <h2 class="text-sm font-semibold text-white uppercase tracking-wider">Execution Console</h2>
+        </div>
+        <div class="flex items-center gap-2">
+            <span id="consoleEntryCount" class="text-[10px] text-muted font-mono">0 entries</span>
+            <button id="clearConsoleBtn" class="text-[10px] text-muted hover:text-white bg-surface/60 hover:bg-surface px-2.5 py-1 rounded-md border border-border/40 transition-colors duration-150 uppercase tracking-wider">Clear</button>
+        </div>
+    </div>
+    <div id="consoleLog" class="console-scroll bg-console-bg text-console-text font-mono text-xs leading-relaxed p-4 h-56 sm:h-64 overflow-y-auto space-y-0.5">
+        <div class="text-console-info opacity-70">[System] Console initialized. Awaiting WebSocket connection...</div>
+    </div>
+</section>
 </main>
 
 <footer class="bg-card border-t border-border px-4 py-2.5 text-center text-[10px] text-muted tracking-wide">
-    Khanfx Hub &copy; <span id="currentYear"></span> &mdash; Connected via Deriv API &mdash; Real-time Synthetic Indices
+    Khanfx_Hub &copy; <span id="currentYear"></span> &mdash; Connected via Deriv API &mdash; Real-time Synthetic Indices Trading
 </footer>
 
 <script>
@@ -181,10 +232,10 @@
         // CONFIGURATION — Modify these values if needed
         // ======================================================
         const APP_ID = '1089';                          // Deriv public test App ID (bypasses domain restrictions)
-        const WS_ENDPOINT = `wss://ws.binaryws.com/websockets/v3?app_id=${APP_ID}`;  // Alternative production endpoint
+        const WS_ENDPOINT = `wss://ws.derivws.com/websockets/v3?app_id=${APP_ID}`;
         const RECONNECT_DELAY_MS = 3000;
         const MAX_RECONNECT_ATTEMPTS = 15;
-        const PING_INTERVAL_MS = 30000;                 // Send heartbeat every 30 seconds
+        const PING_INTERVAL_MS = 30000;
         const TICK_LOG_INTERVAL = 25;
 
         // Market symbol → display name mapping
@@ -221,6 +272,15 @@
         const $consoleEntryCount = document.getElementById('consoleEntryCount');
         const $clearConsoleBtn = document.getElementById('clearConsoleBtn');
         const $currentYear = document.getElementById('currentYear');
+        // Trading elements
+        const $apiTokenInput = document.getElementById('apiTokenInput');
+        const $authorizeBtn = document.getElementById('authorizeBtn');
+        const $authStatus = document.getElementById('authStatus');
+        const $stakeInput = document.getElementById('stakeInput');
+        const $durationInput = document.getElementById('durationInput');
+        const $buyCallBtn = document.getElementById('buyCallBtn');
+        const $buyPutBtn = document.getElementById('buyPutBtn');
+        const $tradeResult = document.getElementById('tradeResult');
 
         let webSocket = null;
         let connectionStatus = 'disconnected';
@@ -228,7 +288,7 @@
         let pendingSymbol = null;
         let reconnectAttempts = 0;
         let reconnectTimer = null;
-        let pingInterval = null;          // Heartbeat interval reference
+        let pingInterval = null;
         let tickSubscriptionId = null;
         let firstTickPrice = null;
         let previousTickPrice = null;
@@ -236,7 +296,11 @@
         let consoleEntryCounter = 0;
         let tickLogCounter = 0;
         let isForgettingTicks = false;
+        let isAuthorized = false;
 
+        // ─────────────────────────────────────
+        // HELPER FUNCTIONS
+        // ─────────────────────────────────────
         function logToConsole(message, type = 'info') {
             const timestamp = new Date().toLocaleTimeString('en-GB', { hour12: false, hour: '2-digit',
                 minute: '2-digit', second: '2-digit' });
@@ -281,7 +345,6 @@
             logToConsole('Console cleared.', 'info');
         }
 
-        // Clear the heartbeat interval safely
         function clearPingInterval() {
             if (pingInterval) {
                 clearInterval(pingInterval);
@@ -489,6 +552,75 @@
             }
         }
 
+        function handleAuthorizeResponse(data) {
+            if (data?.authorize) {
+                isAuthorized = true;
+                $authStatus.textContent = '✅ Authorized';
+                $authStatus.className = 'text-positive text-[10px] mt-1';
+                logToConsole('API token authorized successfully.', 'success');
+                sendWSMessage({ balance: 1, subscribe: 1 });
+            } else {
+                isAuthorized = false;
+                $authStatus.textContent = '❌ Authorization failed';
+                $authStatus.className = 'text-negative text-[10px] mt-1';
+                logToConsole('Authorization failed. Check your token.', 'error');
+            }
+        }
+
+        function handleBuyResponse(data) {
+            const buy = data?.buy;
+            if (!buy) return;
+            if (buy.error) {
+                $tradeResult.textContent = `Trade failed: ${buy.error.message}`;
+                $tradeResult.className = 'text-negative text-xs mt-3';
+                logToConsole(`Trade error: ${buy.error.message}`, 'error');
+            } else {
+                const contractId = buy.contract_id;
+                const payout = buy.payout || 'unknown';
+                $tradeResult.textContent = `✅ Trade placed! Contract ID: ${contractId}, potential payout: ${payout}`;
+                $tradeResult.className = 'text-positive text-xs mt-3';
+                logToConsole(`Trade successful – Contract ID: ${contractId}, payout: ${payout}`, 'success');
+            }
+            $tradeResult.classList.remove('hidden');
+        }
+
+        function placeTrade(contractType) {
+            if (!isAuthorized) {
+                alert('Please authorize with your API token first.');
+                return;
+            }
+            if (!activeSymbol) {
+                alert('No market selected.');
+                return;
+            }
+            const stake = parseFloat($stakeInput.value);
+            const duration = parseInt($durationInput.value, 10);
+            if (isNaN(stake) || stake < 0.35) {
+                alert('Minimum stake is 0.35 USD');
+                return;
+            }
+            if (isNaN(duration) || duration < 1 || duration > 10) {
+                alert('Duration must be between 1 and 10 ticks.');
+                return;
+            }
+
+            const contract = {
+                buy: 1,
+                price: stake,
+                parameters: {
+                    amount: stake,
+                    basis: "stake",
+                    contract_type: contractType, // CALL or PUT
+                    currency: "USD",
+                    duration: duration,
+                    duration_unit: "t",
+                    symbol: activeSymbol
+                }
+            };
+            sendWSMessage(contract);
+            $tradeResult.classList.add('hidden');
+        }
+
         function processInboundMessage(rawData) {
             let data;
             try {
@@ -499,6 +631,9 @@
             }
             const msgType = data?.msg_type;
             switch (msgType) {
+                case 'ping':
+                    sendWSMessage({ pong: 1 });
+                    break;
                 case 'tick':
                     if (data?.tick) handleTickData(data.tick);
                     if (data?.subscription?.id) {
@@ -508,6 +643,12 @@
                     break;
                 case 'balance':
                     handleBalanceResponse(data);
+                    break;
+                case 'authorize':
+                    handleAuthorizeResponse(data);
+                    break;
+                case 'buy':
+                    handleBuyResponse(data);
                     break;
                 case 'error':
                     handleAPIError(data?.error || { message: data?.error?.message || 'Unknown error' });
@@ -529,14 +670,11 @@
         }
 
         function initiateWebSocketConnection() {
-            // Clear any existing heartbeat and reconnect timer
             clearPingInterval();
             if (reconnectTimer) {
                 clearTimeout(reconnectTimer);
                 reconnectTimer = null;
             }
-
-            // Tear down old socket
             if (webSocket) {
                 try {
                     webSocket.onopen = null; webSocket.onclose = null;
@@ -547,11 +685,9 @@
                 } catch (e) {}
                 webSocket = null;
             }
-
             setConnectionStatus('connecting');
             logToConsole(`Connecting to Deriv WebSocket... (Attempt ${reconnectAttempts + 1})`, 'info');
             logToConsole(`Endpoint: ${WS_ENDPOINT}`, 'info');
-
             try {
                 webSocket = new WebSocket(WS_ENDPOINT);
             } catch (err) {
@@ -560,35 +696,34 @@
                 scheduleReconnect();
                 return;
             }
-
             webSocket.onopen = function() {
                 logToConsole('WebSocket connection established successfully.', 'success');
                 setConnectionStatus('connected');
                 reconnectAttempts = 0;
-
-                // Start heartbeat to keep connection alive
-                clearPingInterval(); // Ensure no duplicate intervals
+                clearPingInterval();
                 pingInterval = setInterval(() => {
                     if (webSocket && webSocket.readyState === WebSocket.OPEN) {
                         try {
                             webSocket.send(JSON.stringify({ ping: 1 }));
-                            // Optionally log (uncomment if needed):
-                            // logToConsole('Sent ping heartbeat.', 'info');
+                            if (Math.random() < 0.1) logToConsole('Client heartbeat sent.', 'info');
                         } catch (err) {
-                            logToConsole(`Ping send failed: ${err.message}`, 'error');
+                            logToConsole(`Heartbeat send failed: ${err.message}`, 'error');
                             clearPingInterval();
                         }
                     } else {
-                        // Socket not open, stop pinging
                         clearPingInterval();
                     }
                 }, PING_INTERVAL_MS);
-                logToConsole(`Heartbeat ping started (every ${PING_INTERVAL_MS / 1000}s).`, 'info');
 
-                // Request balance
-                setTimeout(() => { sendWSMessage({ balance: 1, subscribe: 1 }); }, 300);
+                // Auto‑authorize if token is present (pre‑filled)
+                const token = $apiTokenInput.value.trim();
+                if (token && !isAuthorized) {
+                    logToConsole('Auto‑authorizing with provided token…', 'info');
+                    sendWSMessage({ authorize: token });
+                } else if (!token) {
+                    sendWSMessage({ balance: 1, subscribe: 1 });
+                }
 
-                // Resume pending symbol or default
                 if (pendingSymbol) {
                     const sym = pendingSymbol;
                     pendingSymbol = null;
@@ -599,7 +734,6 @@
                     subscribeToTicks(activeSymbol);
                 }
             };
-
             webSocket.onclose = function(event) {
                 logToConsole(`WebSocket closed — Code: ${event.code || 'N/A'}, Reason: ${event.reason || 'No reason'}`, 'warning');
                 clearPingInterval();
@@ -609,11 +743,9 @@
                     scheduleReconnect();
                 }
             };
-
             webSocket.onerror = function() {
                 logToConsole('WebSocket error occurred.', 'error');
             };
-
             webSocket.onmessage = function(event) {
                 if (typeof event.data === 'string') {
                     event.data.split(/\r?\n/).filter(m => m.trim()).forEach(processInboundMessage);
@@ -653,6 +785,23 @@
         });
         $clearConsoleBtn.addEventListener('click', clearConsole);
 
+        $authorizeBtn.addEventListener('click', function() {
+            const token = $apiTokenInput.value.trim();
+            if (!token) {
+                alert('Please enter a valid API token.');
+                return;
+            }
+            if (webSocket && webSocket.readyState === WebSocket.OPEN) {
+                logToConsole('Manual authorization requested.', 'info');
+                sendWSMessage({ authorize: token });
+            } else {
+                alert('WebSocket not connected. Retry after connection.');
+            }
+        });
+
+        $buyCallBtn.addEventListener('click', () => placeTrade('CALL'));
+        $buyPutBtn.addEventListener('click', () => placeTrade('PUT'));
+
         window.addEventListener('beforeunload', function() {
             clearPingInterval();
             if (reconnectTimer) clearTimeout(reconnectTimer);
@@ -671,7 +820,6 @@
             }
         });
 
-        // ────────────── INITIALIZATION ──────────────
         function initialize() {
             $currentYear.textContent = new Date().getFullYear();
             setConnectionStatus('disconnected');
@@ -682,10 +830,11 @@
             $sessionProfitPercent.textContent = '0.00%';
             $sessionTicksCount.textContent = '0 ticks';
             $selectedMarketBadge.textContent = '—';
+            $authStatus.textContent = 'Auto‑authorizing on connect…';
             logToConsole('══════════════════════════════════', 'info');
-            logToConsole('🚀 Khanfx Hub Dashboard Initialized', 'success');
+            logToConsole('🚀 Khanfx_Hub Trading Dashboard Initialized', 'success');
             logToConsole(`App ID: ${APP_ID} (public test)`, 'info');
-            logToConsole(`Endpoint: ${WS_ENDPOINT}`, 'info');
+            logToConsole('API token pre‑configured – will auto‑authorize on connection.', 'info');
             logToConsole('══════════════════════════════════', 'info');
             initiateWebSocketConnection();
         }
