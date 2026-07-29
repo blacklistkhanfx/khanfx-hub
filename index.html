@@ -21,6 +21,14 @@
             mono: ['JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Consolas', 'Monaco', 'monospace'],
             sans: ['Inter', 'system-ui', 'sans-serif'],
           },
+          animation: {
+            'pulse-dot': 'pulseDot 2s ease-in-out infinite',
+            'slide-up': 'slideUp 0.25s ease-out',
+          },
+          keyframes: {
+            pulseDot: { '0%,100%': { opacity: '1', boxShadow: '0 0 0 0 rgba(16,185,129,0.7)' }, '50%': { opacity: '0.85', boxShadow: '0 0 0 8px rgba(16,185,129,0)' } },
+            slideUp: { '0%': { opacity: '0', transform: 'translateY(8px)' }, '100%': { opacity: '1', transform: 'translateY(0)' } },
+          },
         },
       },
     }
@@ -70,14 +78,14 @@
 
   <main class="flex-1 px-4 py-5 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full space-y-5">
 
-    <!-- Login / Auth Section (hidden when logged in) -->
+    <!-- Login Section -->
     <section id="loginSection" class="bg-card border border-border rounded-xl p-4 sm:p-5 shadow-lg shadow-black/15 card-hover">
       <h2 class="text-sm font-semibold text-white uppercase tracking-wider mb-3">🔐 Login to Deriv</h2>
       <p class="text-xs text-muted mb-3">Connect your Deriv account to trade and view live charts.</p>
       <button id="loginButton" class="px-6 py-3 bg-accent hover:bg-accent-dim text-white font-bold rounded-lg transition-colors duration-200 shadow-lg">
         Login with Deriv
       </button>
-      <p class="text-[10px] text-muted mt-2">You'll be redirected to Deriv to authorize this app.</p>
+      <p id="authErrorMsg" class="text-negative text-xs mt-2 hidden"></p>
     </section>
 
     <!-- Main Dashboard (hidden before login) -->
@@ -211,21 +219,20 @@
       // ====================== CONFIGURATION ======================
       const APP_ID = '33qUaFT0pPP4bUDrITabh';
       const WS_ENDPOINT = `wss://ws.derivws.com/websockets/v3?app_id=${APP_ID}`;
-      const REDIRECT_URI = window.location.origin + window.location.pathname; // GitHub Pages URL
+      const REDIRECT_URI = window.location.origin + window.location.pathname;
       const OAUTH_URL = `https://oauth.deriv.com/oauth2/authorize?app_id=${APP_ID}&l=en&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&response_type=token&state=kh`;
       const RECONNECT_DELAY = 3000;
       const MAX_RECONNECT = 15;
       const PING_INTERVAL = 30000;
-      const CANDLE_INTERVAL_SEC = 1; // aggregate into 1-second candles
+      const CANDLE_INTERVAL_SEC = 1;
 
       const SYMBOL_NAMES = {
         '1HZ100V':'Volatility 100 (1s)','1HZ75V':'Volatility 75 (1s)','1HZ50V':'Volatility 50 (1s)','1HZ25V':'Volatility 25 (1s)','1HZ10V':'Volatility 10 (1s)',
         'R_100':'Volatility 100','R_75':'Volatility 75','R_50':'Volatility 50','R_25':'Volatility 25','R_10':'Volatility 10'
       };
 
-      // DOM refs
       const $ = id => document.getElementById(id);
-      const loginSection = $('loginSection'), loginButton = $('loginButton');
+      const loginSection = $('loginSection'), loginButton = $('loginButton'), authErrorMsg = $('authErrorMsg');
       const dashboardContent = $('dashboardContent');
       const statusDot = $('statusDot'), statusLabel = $('statusLabel'), accountBalance = $('accountBalance');
       const marketSelect = $('marketSelect'), selectedMarketBadge = $('selectedMarketBadge');
@@ -239,71 +246,50 @@
       const buyBtn1 = $('buyBtn1'), buyBtn2 = $('buyBtn2'), tradeResult = $('tradeResult');
       const contractParams = $('contractParams');
 
-      // State
       let ws = null, connectionStatus = 'disconnected', activeSymbol = null, pendingSymbol = null;
       let reconnectAttempts = 0, reconnectTimer = null, pingInterval = null;
       let tickSubId = null, firstTickPrice = null, prevTickPrice = null, sessionTicks = 0;
       let consoleCounter = 0, tickLogCounter = 0, isForgetting = false, isAuthorized = false;
       let currentContractType = 'rise_fall';
       let userToken = null;
+      let authTimeout = null; // timeout for auth response
 
       // Chart variables
       let chart = null, candleSeries = null;
-      let currentCandle = null; // open, high, low, close, time (unix)
-      let lastCandleTime = null;
-      let chartReady = false;
+      let currentCandle = null, lastCandleTime = null, chartReady = false;
 
       // ---------- Chart Initialization ----------
       function initChart() {
         if (chart) return;
         chart = LightweightCharts.createChart(document.getElementById('chart-container'), {
-          layout: {
-            background: { color: '#1e293b' },
-            textColor: '#94a3b8',
-          },
-          grid: {
-            vertLines: { color: '#334155' },
-            horzLines: { color: '#334155' },
-          },
+          layout: { background: { color: '#1e293b' }, textColor: '#94a3b8' },
+          grid: { vertLines: { color: '#334155' }, horzLines: { color: '#334155' } },
           crosshair: { mode: 0 },
           timeScale: { timeVisible: true, secondsVisible: true },
         });
         candleSeries = chart.addCandlestickSeries({
-          upColor: '#10b981',
-          downColor: '#ef4444',
-          borderDownColor: '#ef4444',
-          borderUpColor: '#10b981',
-          wickDownColor: '#ef4444',
-          wickUpColor: '#10b981',
+          upColor: '#10b981', downColor: '#ef4444',
+          borderDownColor: '#ef4444', borderUpColor: '#10b981',
+          wickDownColor: '#ef4444', wickUpColor: '#10b981',
         });
         chartReady = true;
       }
 
       function resetChart() {
-        if (candleSeries) {
-          candleSeries.setData([]);
-        }
-        currentCandle = null;
-        lastCandleTime = null;
+        if (candleSeries) candleSeries.setData([]);
+        currentCandle = null; lastCandleTime = null;
       }
 
       function updateChartFromTick(price, tickTime) {
         if (!chartReady || !candleSeries) return;
-        // tickTime is a Unix timestamp in seconds from Deriv (epoch)
         const time = tickTime || Math.floor(Date.now() / 1000);
-        // round to candle interval
         const candleTime = Math.floor(time / CANDLE_INTERVAL_SEC) * CANDLE_INTERVAL_SEC;
         if (!currentCandle || candleTime > lastCandleTime) {
-          // finalize previous candle if exists
-          if (currentCandle) {
-            candleSeries.update(currentCandle);
-          }
-          // start new candle
+          if (currentCandle) candleSeries.update(currentCandle);
           currentCandle = { time: candleTime, open: price, high: price, low: price, close: price };
           lastCandleTime = candleTime;
           candleSeries.update(currentCandle);
         } else {
-          // update current candle
           currentCandle.high = Math.max(currentCandle.high, price);
           currentCandle.low = Math.min(currentCandle.low, price);
           currentCandle.close = price;
@@ -315,22 +301,29 @@
       function parseHashToken() {
         const hash = window.location.hash.substring(1);
         const params = new URLSearchParams(hash);
-        const token = params.get('access_token') || params.get('token1'); // Deriv returns access_token
+        const token = params.get('access_token');
         if (token) {
           userToken = token;
-          // Save to localStorage for persistence
-          localStorage.setItem('deriv_token', userToken);
-          // Clear hash to avoid reuse
-          history.replaceState(null, '', window.location.pathname + window.location.search);
+          sessionStorage.setItem('deriv_token', userToken);
+          history.replaceState(null, '', window.location.pathname);
           return true;
         }
         return false;
       }
 
-      function logout() {
+      function clearTokenAndShowLogin(reason = 'Authorization failed. Please log in again.') {
         userToken = null;
-        localStorage.removeItem('deriv_token');
-        location.reload();
+        sessionStorage.removeItem('deriv_token');
+        isAuthorized = false;
+        if (ws) {
+          try { ws.close(); } catch(e) {}
+          ws = null;
+        }
+        dashboardContent.classList.add('hidden');
+        loginSection.classList.remove('hidden');
+        authErrorMsg.textContent = reason;
+        authErrorMsg.classList.remove('hidden');
+        setStatus('disconnected');
       }
 
       // ---------- Logging ----------
@@ -348,7 +341,6 @@
         while (consoleLog.children.length > 500) consoleLog.removeChild(consoleLog.firstChild);
       }
 
-      // ---------- WebSocket ----------
       function setStatus(status) {
         connectionStatus = status;
         statusDot.classList.remove('bg-red-500','bg-yellow-500','bg-green-500','animate-pulse-dot');
@@ -368,6 +360,7 @@
         }
       }
 
+      // ---------- WebSocket ----------
       function resetSession() {
         firstTickPrice = null; prevTickPrice = null; sessionTicks = 0; tickLogCounter = 0;
         sessionProfit.textContent = '0.00'; sessionProfit.className = 'text-3xl sm:text-4xl font-bold font-mono tabular-nums value-transition tracking-tight text-white';
@@ -443,13 +436,10 @@
         prevTickPrice = price;
         tickLogCounter++;
         if (tickLogCounter % 25 === 0 || sessionTicks <= 3) log(`Tick #${sessionTicks} | ${tick.symbol||activeSymbol} | ${q} | last: ${last}`, 'tick');
-
-        // Update chart
         const epoch = tick.epoch ? parseInt(tick.epoch) : Math.floor(Date.now()/1000);
         updateChartFromTick(price, epoch);
       }
 
-      function handleError(err) { log(`API Error [${err?.code||'?'}]: ${err?.message||'Unknown'}`, 'error'); }
       function handleBalance(data) {
         if (data?.balance?.balance !== undefined) {
           accountBalance.textContent = parseFloat(data.balance.balance).toFixed(2);
@@ -458,13 +448,16 @@
       }
 
       function handleAuthorize(data) {
+        if (authTimeout) { clearTimeout(authTimeout); authTimeout = null; }
         if (data?.error) {
           isAuthorized = false;
           log(`Authorization error: ${data.error.message}`, 'error');
+          clearTokenAndShowLogin(`Login failed: ${data.error.message}`);
         } else if (data?.authorize) {
           isAuthorized = true;
           log('Token authorized.', 'success');
           send({ balance: 1, subscribe: 1 });
+          // If we had pending actions, they are already handled
         }
       }
 
@@ -492,7 +485,7 @@
           case 'balance': handleBalance(data); break;
           case 'authorize': handleAuthorize(data); break;
           case 'buy': handleBuy(data); break;
-          case 'error': handleError(data?.error || { message: data?.error?.message || 'Unknown' }); break;
+          case 'error': log(`API Error [${data?.error?.code||'?'}]: ${data?.error?.message||'Unknown'}`, 'error'); break;
           case 'forget_all': tickSubId = null; isForgetting = false; log('Ticks forgotten.', 'info'); break;
           case 'forget': if (data.forget === tickSubId) tickSubId = null; break;
         }
@@ -500,7 +493,7 @@
 
       function initiateConnection() {
         if (!userToken) { log('No token, cannot connect.', 'error'); return; }
-        clearPing();
+        if (authTimeout) clearTimeout(authTimeout);
         if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
         if (ws) {
           try { ws.onopen=ws.onclose=ws.onerror=ws.onmessage=null; if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) ws.close(1000); } catch(e) {}
@@ -512,17 +505,26 @@
         ws.onopen = () => {
           log('WebSocket connected.', 'success');
           setStatus('connected');
-          clearPing();
+          if (pingInterval) clearInterval(pingInterval);
           pingInterval = setInterval(() => { if (ws && ws.readyState === WebSocket.OPEN) { try { ws.send(JSON.stringify({ ping:1 })); } catch(e) { clearPing(); } } else clearPing(); }, PING_INTERVAL);
-          // authorize
+          // send authorize immediately
           send({ authorize: userToken });
-          if (pendingSymbol) { const s = pendingSymbol; pendingSymbol = null; subscribe(s); }
-          else if (!activeSymbol) subscribe('1HZ100V');
-          else if (activeSymbol && !isForgetting) subscribe(activeSymbol);
+          // set a timeout: if we don't get an authorize response within 5 seconds, consider it a failure
+          authTimeout = setTimeout(() => {
+            log('Authorization timed out — no response from server.', 'error');
+            clearTokenAndShowLogin('Login failed: server did not respond. Please try again.');
+          }, 5000);
+          // after sending auth, we'll wait for response before subscribing
         };
         ws.onclose = (e) => {
+          if (authTimeout) { clearTimeout(authTimeout); authTimeout = null; }
           log(`WebSocket closed – code: ${e.code||'N/A'}`, 'warning');
           clearPing(); tickSubId = null;
+          // If we never got authorized, treat as auth failure
+          if (!isAuthorized) {
+            clearTokenAndShowLogin('Login failed. Your token may be invalid or expired.');
+            return;
+          }
           if (connectionStatus === 'connected' || connectionStatus === 'connecting') { setStatus('disconnected'); scheduleReconnect(); }
         };
         ws.onerror = () => log('WebSocket error.', 'error');
@@ -540,6 +542,8 @@
         setStatus('reconnecting');
         reconnectTimer = setTimeout(() => { reconnectTimer = null; initiateConnection(); }, RECONNECT_DELAY);
       }
+
+      function clearPing() { if (pingInterval) { clearInterval(pingInterval); pingInterval = null; } }
 
       // ---------- Trading UI ----------
       const contractTypes = {
@@ -590,53 +594,48 @@
         currentYear.textContent = new Date().getFullYear();
         initChart();
 
-        // Check for token in URL hash or localStorage
+        // Check for token in URL hash (fresh from OAuth)
         if (parseHashToken()) {
-          // token found in hash
-        } else if (localStorage.getItem('deriv_token')) {
-          userToken = localStorage.getItem('deriv_token');
-        }
-
-        if (userToken) {
-          // Hide login, show dashboard
           loginSection.classList.add('hidden');
           dashboardContent.classList.remove('hidden');
-          log('Token found, connecting…', 'info');
+          log('Token obtained from OAuth.', 'success');
           initiateConnection();
-        } else {
-          // Show login
-          loginSection.classList.remove('hidden');
-          dashboardContent.classList.add('hidden');
-          log('Please log in with your Deriv account.', 'info');
+          return;
         }
-
-        // Login button event
-        loginButton.addEventListener('click', () => {
-          window.location.href = OAUTH_URL;
-        });
-
-        // Market selector
-        marketSelect.addEventListener('change', () => { if (marketSelect.value) { reconnectAttempts=0; if(reconnectTimer){clearTimeout(reconnectTimer);reconnectTimer=null;} changeMarket(marketSelect.value); } });
-        clearConsoleBtn.addEventListener('click', () => { consoleLog.innerHTML = ''; consoleCounter=0; consoleEntryCount.textContent='0 entries'; log('Console cleared.'); });
-
-        // Trading buttons
-        document.querySelectorAll('.trade-type-btn').forEach(btn => {
-          btn.addEventListener('click', () => updateContractUI(btn.dataset.contract));
-        });
-        buyBtn1.addEventListener('click', () => placeTrade(contractTypes[currentContractType].type1));
-        buyBtn2.addEventListener('click', () => placeTrade(contractTypes[currentContractType].type2));
-
-        window.addEventListener('beforeunload', () => { clearPing(); if(reconnectTimer)clearTimeout(reconnectTimer); reconnectAttempts=MAX_RECONNECT; if(ws&&ws.readyState===WebSocket.OPEN) try{ws.send(JSON.stringify({forget_all:'ticks'}));}catch(e){} });
-        document.addEventListener('visibilitychange', () => {
-          if (document.visibilityState === 'visible' && connectionStatus === 'disconnected' && reconnectAttempts < MAX_RECONNECT) {
-            if (!ws || ws.readyState !== WebSocket.OPEN) { reconnectAttempts=0; initiateConnection(); }
-          }
-        });
-
-        // Set initial contract UI
-        updateContractUI('rise_fall');
+        // Check for token in sessionStorage (persisted)
+        const storedToken = sessionStorage.getItem('deriv_token');
+        if (storedToken) {
+          userToken = storedToken;
+          loginSection.classList.add('hidden');
+          dashboardContent.classList.remove('hidden');
+          log('Using stored token.', 'info');
+          initiateConnection();
+          return;
+        }
+        // No token – show login
+        loginSection.classList.remove('hidden');
+        dashboardContent.classList.add('hidden');
+        log('Please log in with your Deriv account.', 'info');
       }
 
+      // Event listeners
+      loginButton.addEventListener('click', () => { window.location.href = OAUTH_URL; });
+      marketSelect.addEventListener('change', () => { if (marketSelect.value) { reconnectAttempts=0; if(reconnectTimer){clearTimeout(reconnectTimer);reconnectTimer=null;} changeMarket(marketSelect.value); } });
+      clearConsoleBtn.addEventListener('click', () => { consoleLog.innerHTML = ''; consoleCounter=0; consoleEntryCount.textContent='0 entries'; log('Console cleared.'); });
+      document.querySelectorAll('.trade-type-btn').forEach(btn => {
+        btn.addEventListener('click', () => updateContractUI(btn.dataset.contract));
+      });
+      buyBtn1.addEventListener('click', () => placeTrade(contractTypes[currentContractType].type1));
+      buyBtn2.addEventListener('click', () => placeTrade(contractTypes[currentContractType].type2));
+
+      window.addEventListener('beforeunload', () => { clearPing(); if(reconnectTimer)clearTimeout(reconnectTimer); reconnectAttempts=MAX_RECONNECT; if(ws&&ws.readyState===WebSocket.OPEN) try{ws.send(JSON.stringify({forget_all:'ticks'}));}catch(e){} });
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible' && connectionStatus === 'disconnected' && reconnectAttempts < MAX_RECONNECT) {
+          if (userToken && (!ws || ws.readyState !== WebSocket.OPEN)) { reconnectAttempts=0; initiateConnection(); }
+        }
+      });
+
+      updateContractUI('rise_fall');
       window.addEventListener('load', initApp);
     })();
   </script>
