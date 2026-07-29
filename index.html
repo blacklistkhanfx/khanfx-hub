@@ -1,846 +1,566 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Khanfx_Hub — Trading Dashboard</title>
-    <script src="https://cdn.tailwindcss.com">
-    </script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        surface: '#0f172a',
-                        card: '#1e293b',
-                        border: '#334155',
-                        accent: '#06b6d4',
-                        'accent-dim': '#0891b2',
-                        positive: '#10b981',
-                        negative: '#ef4444',
-                        warning: '#f59e0b',
-                        muted: '#94a3b8',
-                        'console-bg': '#0a0f1a',
-                        'console-text': '#a5f0c5',
-                        'console-warn': '#fbbf24',
-                        'console-error': '#f87171',
-                        'console-info': '#7dd3fc',
-                    },
-                    fontFamily: {
-                        mono: ['JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Consolas', 'Monaco', 'monospace'],
-                        sans: ['Inter', 'system-ui', 'sans-serif'],
-                    },
-                    animation: {
-                        'pulse-dot': 'pulseDot 2s ease-in-out infinite',
-                        'slide-up': 'slideUp 0.25s ease-out',
-                    },
-                    keyframes: {
-                        pulseDot: {
-                            '0%, 100%': { opacity: '1', boxShadow: '0 0 0 0 rgba(16, 185, 129, 0.7)' },
-                            '50%': { opacity: '0.85', boxShadow: '0 0 0 8px rgba(16, 185, 129, 0)' },
-                        },
-                        slideUp: {
-                            '0%': { opacity: '0', transform: 'translateY(8px)' },
-                            '100%': { opacity: '1', transform: 'translateY(0)' },
-                        },
-                    },
-                },
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Khanfx_Hub — Full Deriv Trading</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            surface: '#0f172a',
+            card: '#1e293b',
+            border: '#334155',
+            accent: '#06b6d4',
+            'accent-dim': '#0891b2',
+            positive: '#10b981',
+            negative: '#ef4444',
+            warning: '#f59e0b',
+            muted: '#94a3b8',
+            'console-bg': '#0a0f1a',
+            'console-text': '#a5f0c5',
+            'console-warn': '#fbbf24',
+            'console-error': '#f87171',
+            'console-info': '#7dd3fc',
+          },
+          fontFamily: {
+            mono: ['JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Consolas', 'Monaco', 'monospace'],
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+          },
+          animation: {
+            'pulse-dot': 'pulseDot 2s ease-in-out infinite',
+            'slide-up': 'slideUp 0.25s ease-out',
+          },
+          keyframes: {
+            pulseDot: {
+              '0%,100%': { opacity: '1', boxShadow: '0 0 0 0 rgba(16,185,129,0.7)' },
+              '50%': { opacity: '0.85', boxShadow: '0 0 0 8px rgba(16,185,129,0)' },
             },
-        };
-    </script>
-    <style>
-        .console-scroll::-webkit-scrollbar { width: 5px; }
-        .console-scroll::-webkit-scrollbar-track { background: #0a0f1a; border-radius: 4px; }
-        .console-scroll::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
-        .console-scroll::-webkit-scrollbar-thumb:hover { background: #475569; }
-        .value-transition { transition: all 0.15s ease-out; }
-        .card-hover { transition: border-color 0.2s ease, box-shadow 0.2s ease; }
-        .card-hover:hover { border-color: #475569; box-shadow: 0 0 20px rgba(6, 182, 212, 0.06); }
-        select {
-            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%2394a3b8' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
-            background-position: right 0.75rem center;
-            background-repeat: no-repeat;
-            background-size: 1.25em;
-            -webkit-appearance: none;
-            -moz-appearance: none;
-            appearance: none;
-        }
-        select:focus { box-shadow: 0 0 0 2px rgba(6, 182, 212, 0.35); }
-    </style>
+            slideUp: {
+              '0%': { opacity: '0', transform: 'translateY(8px)' },
+              '100%': { opacity: '1', transform: 'translateY(0)' },
+            },
+          },
+        },
+      },
+    }
+  </script>
+  <style>
+    .console-scroll::-webkit-scrollbar { width: 5px; }
+    .console-scroll::-webkit-scrollbar-track { background: #0a0f1a; border-radius: 4px; }
+    .console-scroll::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+    .console-scroll::-webkit-scrollbar-thumb:hover { background: #475569; }
+    .value-transition { transition: all 0.15s ease-out; }
+    .card-hover { transition: border-color 0.2s, box-shadow 0.2s; }
+    .card-hover:hover { border-color: #475569; box-shadow: 0 0 20px rgba(6,182,212,0.06); }
+    select, input[type="number"] {
+      background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%2394a3b8' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+      background-position: right 0.75rem center;
+      background-repeat: no-repeat;
+      background-size: 1.25em;
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      appearance: none;
+    }
+    select:focus, input:focus { box-shadow: 0 0 0 2px rgba(6,182,212,0.35); outline: none; }
+  </style>
 </head>
 <body class="bg-surface text-slate-200 font-sans min-h-screen flex flex-col antialiased">
 
-    <!-- ========== HEADER ========== -->
-    <header class="bg-card border-b border-border px-4 py-3 sm:px-6 lg:px-8 flex items-center justify-between flex-wrap gap-3 shadow-lg shadow-black/20 z-20">
-        <div class="flex items-center gap-3">
-            <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-accent to-accent-dim flex items-center justify-center text-white font-bold text-sm shadow-md shadow-accent/25">KH</div>
-            <div>
-                <h1 class="text-lg sm:text-xl font-bold tracking-tight text-white leading-tight">Khanfx_Hub</h1>
-                <span class="text-xs text-muted tracking-wide">Synthetic Indices Trading</span>
-            </div>
-        </div>
-        <div class="flex items-center gap-4 sm:gap-6 flex-wrap">
-            <div class="flex items-center gap-2">
-                <span id="statusDot" class="inline-block w-3 h-3 rounded-full bg-red-500 shadow-md transition-colors duration-300" title="Connection Status"></span>
-                <span id="statusLabel" class="text-xs sm:text-sm font-medium text-muted tracking-wide uppercase">Offline</span>
-            </div>
-            <div class="flex items-center gap-2 bg-surface/60 rounded-lg px-3 py-1.5 border border-border/60">
-                <span class="text-xs text-muted uppercase tracking-wider">Balance</span>
-                <span id="accountBalance" class="text-sm font-bold text-white font-mono tabular-nums">0.00</span>
-                <span class="text-xs text-muted">USD</span>
-            </div>
-        </div>
-    </header>
+  <!-- ========== HEADER ========== -->
+  <header class="bg-card border-b border-border px-4 py-3 sm:px-6 lg:px-8 flex items-center justify-between flex-wrap gap-3 shadow-lg shadow-black/20 z-20">
+    <div class="flex items-center gap-3">
+      <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-accent to-accent-dim flex items-center justify-center text-white font-bold text-sm shadow-md shadow-accent/25">KH</div>
+      <div>
+        <h1 class="text-lg sm:text-xl font-bold tracking-tight text-white leading-tight">Khanfx_Hub</h1>
+        <span class="text-xs text-muted tracking-wide">All Deriv Contracts</span>
+      </div>
+    </div>
+    <div class="flex items-center gap-4 sm:gap-6 flex-wrap">
+      <div class="flex items-center gap-2">
+        <span id="statusDot" class="inline-block w-3 h-3 rounded-full bg-red-500 shadow-md transition-colors duration-300"></span>
+        <span id="statusLabel" class="text-xs sm:text-sm font-medium text-muted tracking-wide uppercase">Offline</span>
+      </div>
+      <div class="flex items-center gap-2 bg-surface/60 rounded-lg px-3 py-1.5 border border-border/60">
+        <span class="text-xs text-muted uppercase tracking-wider">Balance</span>
+        <span id="accountBalance" class="text-sm font-bold text-white font-mono tabular-nums">0.00</span>
+        <span class="text-xs text-muted">USD</span>
+      </div>
+    </div>
+  </header>
 
-    <!-- ========== MAIN CONTENT ========== -->
-    <main class="flex-1 px-4 py-5 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full space-y-5">
+  <!-- ========== MAIN CONTENT ========== -->
+  <main class="flex-1 px-4 py-5 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full space-y-5">
 
-        <!-- Control Panel -->
-        <section class="bg-card border border-border rounded-xl p-4 sm:p-5 shadow-lg shadow-black/15 card-hover">
-            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                <div>
-                    <h2 class="text-sm font-semibold text-white uppercase tracking-wider mb-0.5">Market Selector</h2>
-                    <p class="text-xs text-muted">Choose a synthetic volatility index to stream real-time ticks</p>
-                </div>
-                <div class="relative w-full sm:w-72">
-                    <select id="marketSelect"
-                    class="w-full bg-surface border border-border text-white rounded-lg px-4 py-2.5 pr-10 text-sm font-medium focus:outline-none focus:border-accent transition-colors duration-200 cursor-pointer">
-                    <option value="" disabled>— Select Market —</option>
-                    <optgroup label="⚡ 1-Second Volatility Indices">
-                        <option value="1HZ100V">Volatility 100 (1s) Index</option>
-                        <option value="1HZ75V">Volatility 75 (1s) Index</option>
-                        <option value="1HZ50V">Volatility 50 (1s) Index</option>
-                        <option value="1HZ25V">Volatility 25 (1s) Index</option>
-                        <option value="1HZ10V">Volatility 10 (1s) Index</option>
-                    </optgroup>
-                    <optgroup label="📊 Standard Volatility Indices">
-                        <option value="R_100">Volatility 100 Index</option>
-                        <option value="R_75">Volatility 75 Index</option>
-                        <option value="R_50">Volatility 50 Index</option>
-                        <option value="R_25">Volatility 25 Index</option>
-                        <option value="R_10">Volatility 10 Index</option>
-                    </optgroup>
-                </select>
-            </div>
+    <!-- Market Selector -->
+    <section class="bg-card border border-border rounded-xl p-4 sm:p-5 shadow-lg shadow-black/15 card-hover">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div>
+          <h2 class="text-sm font-semibold text-white uppercase tracking-wider mb-0.5">Market Selector</h2>
+          <p class="text-xs text-muted">Synthetic indices – real‑time tick streaming</p>
         </div>
+        <div class="relative w-full sm:w-72">
+          <select id="marketSelect" class="w-full bg-surface border border-border text-white rounded-lg px-4 py-2.5 pr-10 text-sm font-medium focus:outline-none focus:border-accent transition-colors duration-200 cursor-pointer">
+            <option value="" disabled>— Select Market —</option>
+            <optgroup label="⚡ 1-Second Volatility Indices">
+              <option value="1HZ100V">Volatility 100 (1s)</option>
+              <option value="1HZ75V">Volatility 75 (1s)</option>
+              <option value="1HZ50V">Volatility 50 (1s)</option>
+              <option value="1HZ25V">Volatility 25 (1s)</option>
+              <option value="1HZ10V">Volatility 10 (1s)</option>
+            </optgroup>
+            <optgroup label="📊 Standard Volatility Indices">
+              <option value="R_100">Volatility 100</option>
+              <option value="R_75">Volatility 75</option>
+              <option value="R_50">Volatility 50</option>
+              <option value="R_25">Volatility 25</option>
+              <option value="R_10">Volatility 10</option>
+            </optgroup>
+          </select>
+        </div>
+      </div>
     </section>
 
     <!-- Data Cards -->
     <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        <div class="bg-card border border-border rounded-xl p-4 sm:p-5 shadow-lg shadow-black/15 card-hover flex flex-col justify-between">
-            <div class="flex items-center justify-between mb-3">
-                <span class="text-xs font-semibold text-muted uppercase tracking-wider">Current Price</span>
-                <span id="selectedMarketBadge" class="text-[10px] bg-surface px-2 py-0.5 rounded-md text-accent font-mono border border-border/60">—</span>
-            </div>
-            <div>
-                <span id="currentPrice" class="text-3xl sm:text-4xl font-bold text-white font-mono tabular-nums value-transition tracking-tight">—.——</span>
-            </div>
-            <div id="priceChangeIndicator" class="mt-2 text-xs text-muted flex items-center gap-1 opacity-0 transition-opacity duration-200">
-                <span id="priceChangeArrow">●</span>
-                <span id="priceChangeText">Waiting for data...</span>
-            </div>
+      <div class="bg-card border border-border rounded-xl p-4 sm:p-5 shadow-lg shadow-black/15 card-hover flex flex-col justify-between">
+        <div class="flex items-center justify-between mb-3">
+          <span class="text-xs font-semibold text-muted uppercase tracking-wider">Current Price</span>
+          <span id="selectedMarketBadge" class="text-[10px] bg-surface px-2 py-0.5 rounded-md text-accent font-mono border border-border/60">—</span>
         </div>
-        <div class="bg-card border border-border rounded-xl p-4 sm:p-5 shadow-lg shadow-black/15 card-hover flex flex-col items-center justify-center text-center">
-            <span class="text-xs font-semibold text-muted uppercase tracking-wider mb-3">Last Digit</span>
-            <span id="lastDigit" class="text-6xl sm:text-7xl font-black text-accent font-mono tabular-nums value-transition leading-none" style="text-shadow: 0 0 40px rgba(6,182,212,0.5);">—</span>
-            <span class="text-[10px] text-muted mt-2">Extracted from tick quote</span>
+        <span id="currentPrice" class="text-3xl sm:text-4xl font-bold text-white font-mono tabular-nums value-transition tracking-tight">—.——</span>
+        <div id="priceChangeIndicator" class="mt-2 text-xs text-muted flex items-center gap-1 opacity-0 transition-opacity duration-200">
+          <span id="priceChangeArrow">●</span>
+          <span id="priceChangeText">Waiting for data...</span>
         </div>
-        <div class="bg-card border border-border rounded-xl p-4 sm:p-5 shadow-lg shadow-black/15 card-hover flex flex-col justify-between">
-            <span class="text-xs font-semibold text-muted uppercase tracking-wider mb-3">Session Change</span>
-            <div>
-                <span id="sessionProfit" class="text-3xl sm:text-4xl font-bold font-mono tabular-nums value-transition tracking-tight text-white">0.00</span>
-            </div>
-            <div class="mt-2 flex items-center gap-2">
-                <span id="sessionProfitPercent" class="text-xs text-muted font-mono">0.00%</span>
-                <span id="sessionTicksCount" class="text-[10px] text-muted bg-surface/60 px-2 py-0.5 rounded-full">0 ticks</span>
-            </div>
+      </div>
+      <div class="bg-card border border-border rounded-xl p-4 sm:p-5 shadow-lg shadow-black/15 card-hover flex flex-col items-center justify-center text-center">
+        <span class="text-xs font-semibold text-muted uppercase tracking-wider mb-3">Last Digit</span>
+        <span id="lastDigit" class="text-6xl sm:text-7xl font-black text-accent font-mono tabular-nums value-transition leading-none" style="text-shadow: 0 0 40px rgba(6,182,212,0.5);">—</span>
+        <span class="text-[10px] text-muted mt-2">Extracted from tick quote</span>
+      </div>
+      <div class="bg-card border border-border rounded-xl p-4 sm:p-5 shadow-lg shadow-black/15 card-hover flex flex-col justify-between">
+        <span class="text-xs font-semibold text-muted uppercase tracking-wider mb-3">Session Change</span>
+        <span id="sessionProfit" class="text-3xl sm:text-4xl font-bold font-mono tabular-nums value-transition tracking-tight text-white">0.00</span>
+        <div class="mt-2 flex items-center gap-2">
+          <span id="sessionProfitPercent" class="text-xs text-muted font-mono">0.00%</span>
+          <span id="sessionTicksCount" class="text-[10px] text-muted bg-surface/60 px-2 py-0.5 rounded-full">0 ticks</span>
         </div>
+      </div>
     </section>
 
-    <!-- TRADING PANEL -->
+    <!-- ===== FULL TRADING PANEL (Deriv‑like) ===== -->
     <section class="bg-card border border-border rounded-xl p-4 sm:p-5 shadow-lg shadow-black/15 card-hover">
-        <div class="flex items-center justify-between mb-3">
-            <h2 class="text-sm font-semibold text-white uppercase tracking-wider">⚡ Place Trade</h2>
-            <span class="text-[10px] text-muted">Rise / Fall contracts</span>
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-sm font-semibold text-white uppercase tracking-wider">⚡ Trade Contracts</h2>
+        <span class="text-[10px] text-muted">All deriv options</span>
+      </div>
+
+      <!-- Token row -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+        <div class="lg:col-span-2">
+          <label class="text-xs text-muted block mb-1">Deriv API Token</label>
+          <div class="flex gap-2">
+            <input id="apiTokenInput" type="password" value="pat_d434f09503fb6a7b0586722ca2823da01fdda27ebbe3dc347151d186a033406"
+              class="flex-1 bg-surface border border-border rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-accent">
+            <button id="authorizeBtn" class="px-4 py-2 bg-accent hover:bg-accent-dim text-white text-sm font-semibold rounded-lg transition-colors duration-200">Authorize</button>
+          </div>
+          <span id="authStatus" class="text-[10px] text-muted mt-1 block">Auto‑authorizing on connect…</span>
         </div>
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
-            <!-- API Token (pre-filled and auto-authorizing) -->
-            <div class="lg:col-span-2">
-                <label class="text-xs text-muted block mb-1">Deriv API Token</label>
-                <div class="flex gap-2">
-                    <input id="apiTokenInput" type="password" value="pat_d434f09503fb6a7b0586722ca2823da01fdda27ebbe3dc347151d186a033406"
-                    class="flex-1 bg-surface border border-border rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-accent">
-                    <button id="authorizeBtn"
-                    class="px-4 py-2 bg-accent hover:bg-accent-dim text-white text-sm font-semibold rounded-lg transition-colors duration-200">
-                    Authorize
-                </button>
-            </div>
-            <span id="authStatus" class="text-[10px] text-muted mt-1 block lg:col-span-2">Auto‑authorizing on connect…</span>
-        </div>
-        <!-- Stake -->
+      </div>
+
+      <!-- Contract type selector -->
+      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 mb-4">
+        <button data-contract="rise_fall" class="trade-type-btn bg-surface border border-border rounded-lg px-3 py-2 text-xs font-medium hover:border-accent transition-colors active-tab">Rise / Fall</button>
+        <button data-contract="digits" class="trade-type-btn bg-surface border border-border rounded-lg px-3 py-2 text-xs font-medium hover:border-accent transition-colors">Digits</button>
+        <button data-contract="over_under" class="trade-type-btn bg-surface border border-border rounded-lg px-3 py-2 text-xs font-medium hover:border-accent transition-colors">Over / Under</button>
+        <button data-contract="even_odd" class="trade-type-btn bg-surface border border-border rounded-lg px-3 py-2 text-xs font-medium hover:border-accent transition-colors">Even / Odd</button>
+        <button data-contract="high_low" class="trade-type-btn bg-surface border border-border rounded-lg px-3 py-2 text-xs font-medium hover:border-accent transition-colors">High / Low</button>
+        <button data-contract="asian" class="trade-type-btn bg-surface border border-border rounded-lg px-3 py-2 text-xs font-medium hover:border-accent transition-colors">Asian Up/Down</button>
+        <button data-contract="reset" class="trade-type-btn bg-surface border border-border rounded-lg px-3 py-2 text-xs font-medium hover:border-accent transition-colors">Reset Call/Put</button>
+        <button data-contract="accumulator" class="trade-type-btn bg-surface border border-border rounded-lg px-3 py-2 text-xs font-medium hover:border-accent transition-colors">Accumulator (Beta)</button>
+      </div>
+
+      <!-- Contract‑specific parameters -->
+      <div id="contractParams" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+        <!-- Filled dynamically -->
+      </div>
+
+      <!-- Stake, Duration (common) & Buy Buttons -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
         <div>
-            <label class="text-xs text-muted block mb-1">Stake (USD)</label>
-            <input id="stakeInput" type="number" value="1" min="0.35" step="0.01"
-            class="w-full bg-surface border border-border rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-accent">
+          <label class="text-xs text-muted block mb-1">Stake (USD)</label>
+          <input id="stakeInput" type="number" value="1" min="0.35" step="0.01" class="w-full bg-surface border border-border rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-accent">
         </div>
-        <!-- Duration -->
         <div>
-            <label class="text-xs text-muted block mb-1">Duration (ticks)</label>
-            <input id="durationInput" type="number" value="5" min="1" max="10" step="1"
-            class="w-full bg-surface border border-border rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-accent">
+          <label class="text-xs text-muted block mb-1">Duration</label>
+          <input id="durationInput" type="number" value="5" min="1" step="1" class="w-full bg-surface border border-border rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-accent">
         </div>
-        <!-- Contract Type -->
-        <div class="flex items-end gap-3">
-            <button id="buyCallBtn"
-            class="flex-1 bg-positive hover:bg-green-600 text-white font-bold py-3 rounded-lg transition-colors duration-200 text-sm uppercase tracking-wider shadow-lg">
-            ▲ Call (Rise)
-        </button>
-        <button id="buyPutBtn"
-        class="flex-1 bg-negative hover:bg-red-600 text-white font-bold py-3 rounded-lg transition-colors duration-200 text-sm uppercase tracking-wider shadow-lg">
-        ▼ Put (Fall)
-    </button>
-</div>
-</div>
-<div id="tradeResult" class="mt-3 text-xs text-muted hidden"></div>
-</section>
+        <div class="flex items-end gap-2">
+          <button id="buyBtn1" class="flex-1 bg-positive hover:bg-green-600 text-white font-bold py-3 rounded-lg transition-colors duration-200 text-sm uppercase tracking-wider shadow-lg">▲ Buy</button>
+          <button id="buyBtn2" class="flex-1 bg-negative hover:bg-red-600 text-white font-bold py-3 rounded-lg transition-colors duration-200 text-sm uppercase tracking-wider shadow-lg">▼ Buy</button>
+        </div>
+      </div>
+      <div id="tradeResult" class="text-xs text-muted hidden"></div>
+    </section>
 
-<!-- Execution Console -->
-<section class="bg-card border border-border rounded-xl shadow-lg shadow-black/15 overflow-hidden card-hover">
-    <div class="flex items-center justify-between px-4 py-3 border-b border-border bg-surface/40">
+    <!-- Console -->
+    <section class="bg-card border border-border rounded-xl shadow-lg shadow-black/15 overflow-hidden card-hover">
+      <div class="flex items-center justify-between px-4 py-3 border-b border-border bg-surface/40">
         <div class="flex items-center gap-2">
-            <span class="w-2 h-2 rounded-full bg-positive animate-pulse-dot"></span>
-            <h2 class="text-sm font-semibold text-white uppercase tracking-wider">Execution Console</h2>
+          <span class="w-2 h-2 rounded-full bg-positive animate-pulse-dot"></span>
+          <h2 class="text-sm font-semibold text-white uppercase tracking-wider">Execution Console</h2>
         </div>
         <div class="flex items-center gap-2">
-            <span id="consoleEntryCount" class="text-[10px] text-muted font-mono">0 entries</span>
-            <button id="clearConsoleBtn" class="text-[10px] text-muted hover:text-white bg-surface/60 hover:bg-surface px-2.5 py-1 rounded-md border border-border/40 transition-colors duration-150 uppercase tracking-wider">Clear</button>
+          <span id="consoleEntryCount" class="text-[10px] text-muted font-mono">0 entries</span>
+          <button id="clearConsoleBtn" class="text-[10px] text-muted hover:text-white bg-surface/60 hover:bg-surface px-2.5 py-1 rounded-md border border-border/40 transition-colors duration-150 uppercase tracking-wider">Clear</button>
         </div>
-    </div>
-    <div id="consoleLog" class="console-scroll bg-console-bg text-console-text font-mono text-xs leading-relaxed p-4 h-56 sm:h-64 overflow-y-auto space-y-0.5">
-        <div class="text-console-info opacity-70">[System] Console initialized. Awaiting WebSocket connection...</div>
-    </div>
-</section>
-</main>
+      </div>
+      <div id="consoleLog" class="console-scroll bg-console-bg text-console-text font-mono text-xs leading-relaxed p-4 h-56 sm:h-64 overflow-y-auto space-y-0.5">
+        <div class="text-console-info opacity-70">[System] Console initialized…</div>
+      </div>
+    </section>
+  </main>
 
-<footer class="bg-card border-t border-border px-4 py-2.5 text-center text-[10px] text-muted tracking-wide">
-    Khanfx_Hub &copy; <span id="currentYear"></span> &mdash; Connected via Deriv API &mdash; Real-time Synthetic Indices Trading
-</footer>
+  <footer class="bg-card border-t border-border px-4 py-2.5 text-center text-[10px] text-muted tracking-wide">
+    Khanfx_Hub &copy; <span id="currentYear"></span> — Powered by Deriv API
+  </footer>
 
-<script>
+  <script>
     (function() {
-        // ======================================================
-        // CONFIGURATION — Modify these values if needed
-        // ======================================================
-        const APP_ID = '1089';                          // Deriv public test App ID (bypasses domain restrictions)
-        const WS_ENDPOINT = `wss://ws.derivws.com/websockets/v3?app_id=${APP_ID}`;
-        const RECONNECT_DELAY_MS = 3000;
-        const MAX_RECONNECT_ATTEMPTS = 15;
-        const PING_INTERVAL_MS = 30000;
-        const TICK_LOG_INTERVAL = 25;
+      // ====================== CONFIG ======================
+      const APP_ID = '1089';
+      const WS_ENDPOINT = `wss://ws.derivws.com/websockets/v3?app_id=${APP_ID}`;
+      const RECONNECT_DELAY = 3000;
+      const MAX_RECONNECT = 15;
+      const PING_INTERVAL = 30000;
 
-        // Market symbol → display name mapping
-        const SYMBOL_DISPLAY_NAMES = {
-            '1HZ100V': 'Volatility 100 (1s)',
-            '1HZ75V': 'Volatility 75 (1s)',
-            '1HZ50V': 'Volatility 50 (1s)',
-            '1HZ25V': 'Volatility 25 (1s)',
-            '1HZ10V': 'Volatility 10 (1s)',
-            'R_100': 'Volatility 100',
-            'R_75': 'Volatility 75',
-            'R_50': 'Volatility 50',
-            'R_25': 'Volatility 25',
-            'R_10': 'Volatility 10',
+      // Market mapping
+      const SYMBOL_NAMES = {
+        '1HZ100V':'Volatility 100 (1s)','1HZ75V':'Volatility 75 (1s)','1HZ50V':'Volatility 50 (1s)','1HZ25V':'Volatility 25 (1s)','1HZ10V':'Volatility 10 (1s)',
+        'R_100':'Volatility 100','R_75':'Volatility 75','R_50':'Volatility 50','R_25':'Volatility 25','R_10':'Volatility 10'
+      };
+
+      // DOM refs
+      const $ = id => document.getElementById(id);
+      const statusDot = $('statusDot'), statusLabel = $('statusLabel'), accountBalance = $('accountBalance');
+      const marketSelect = $('marketSelect'), selectedMarketBadge = $('selectedMarketBadge');
+      const currentPrice = $('currentPrice'), priceChangeIndicator = $('priceChangeIndicator');
+      const priceChangeArrow = $('priceChangeArrow'), priceChangeText = $('priceChangeText');
+      const lastDigit = $('lastDigit'), sessionProfit = $('sessionProfit');
+      const sessionProfitPercent = $('sessionProfitPercent'), sessionTicksCount = $('sessionTicksCount');
+      const consoleLog = $('consoleLog'), consoleEntryCount = $('consoleEntryCount');
+      const clearConsoleBtn = $('clearConsoleBtn'), currentYear = $('currentYear');
+      const apiTokenInput = $('apiTokenInput'), authorizeBtn = $('authorizeBtn'), authStatus = $('authStatus');
+      const stakeInput = $('stakeInput'), durationInput = $('durationInput');
+      const buyBtn1 = $('buyBtn1'), buyBtn2 = $('buyBtn2'), tradeResult = $('tradeResult');
+      const contractParams = $('contractParams');
+
+      // State
+      let ws = null, connectionStatus = 'disconnected', activeSymbol = null, pendingSymbol = null;
+      let reconnectAttempts = 0, reconnectTimer = null, pingInterval = null;
+      let tickSubId = null, firstTickPrice = null, prevTickPrice = null, sessionTicks = 0;
+      let consoleCounter = 0, tickLogCounter = 0, isForgetting = false, isAuthorized = false;
+      let currentContractType = 'rise_fall'; // default
+
+      // Helper: log to console
+      function log(msg, type='info') {
+        const time = new Date().toLocaleTimeString('en-GB', {hour12:false, hour:'2-digit', minute:'2-digit', second:'2-digit'});
+        const colors = {info:'text-console-info', success:'text-console-text', warning:'text-console-warn', error:'text-console-error', tick:'text-console-text opacity-60'};
+        const prefix = {info:'[INFO]', success:'[OK]', warning:'[WARN]', error:'[ERR]', tick:'[TICK]'}[type] || '[INFO]';
+        const entry = document.createElement('div');
+        entry.className = `${colors[type] || colors.info} animate-slide-up`;
+        entry.innerHTML = `<span class="text-muted/50">${time}</span> <span class="font-semibold">${prefix}</span> ${msg.replace(/</g,'&lt;')}`;
+        consoleLog.appendChild(entry);
+        consoleLog.scrollTop = consoleLog.scrollHeight;
+        consoleCounter++;
+        consoleEntryCount.textContent = `${consoleCounter} entry${consoleCounter!==1?'es':''}`;
+        while (consoleLog.children.length > 500) consoleLog.removeChild(consoleLog.firstChild);
+      }
+
+      function clearConsole() { consoleLog.innerHTML = ''; consoleCounter = 0; consoleEntryCount.textContent = '0 entries'; log('Console cleared.'); }
+      function clearPing() { if (pingInterval) { clearInterval(pingInterval); pingInterval = null; } }
+
+      function setStatus(status) {
+        connectionStatus = status;
+        statusDot.classList.remove('bg-red-500','bg-yellow-500','bg-green-500','animate-pulse-dot');
+        if (status === 'connected') {
+          statusDot.classList.add('bg-green-500','animate-pulse-dot');
+          statusLabel.textContent = 'Connected';
+          statusLabel.className = 'text-xs sm:text-sm font-medium text-positive tracking-wide uppercase';
+          reconnectAttempts = 0;
+        } else if (status === 'connecting') {
+          statusDot.classList.add('bg-yellow-500');
+          statusLabel.textContent = 'Connecting...';
+          statusLabel.className = 'text-xs sm:text-sm font-medium text-warning tracking-wide uppercase';
+        } else if (status === 'reconnecting') {
+          statusDot.classList.add('bg-yellow-500');
+          statusLabel.textContent = `Reconnecting (${reconnectAttempts}/${MAX_RECONNECT})`;
+          statusLabel.className = 'text-xs sm:text-sm font-medium text-warning tracking-wide uppercase';
+        } else {
+          statusDot.classList.add('bg-red-500');
+          statusLabel.textContent = 'Offline';
+          statusLabel.className = 'text-xs sm:text-sm font-medium text-negative tracking-wide uppercase';
+        }
+      }
+
+      function resetSession() {
+        firstTickPrice = null; prevTickPrice = null; sessionTicks = 0; tickLogCounter = 0;
+        sessionProfit.textContent = '0.00'; sessionProfit.className = 'text-3xl sm:text-4xl font-bold font-mono tabular-nums value-transition tracking-tight text-white';
+        sessionProfitPercent.textContent = '0.00%'; sessionTicksCount.textContent = '0 ticks';
+        priceChangeIndicator.classList.add('opacity-0');
+        currentPrice.textContent = '—.——'; lastDigit.textContent = '—';
+        lastDigit.style.textShadow = '0 0 40px rgba(6,182,212,0.5)';
+      }
+
+      function send(msg) {
+        if (!ws || ws.readyState !== WebSocket.OPEN) { log('Cannot send – WebSocket not open.', 'warning'); return false; }
+        try { ws.send(JSON.stringify(msg)); return true; } catch(e) { log(`Send error: ${e.message}`, 'error'); return false; }
+      }
+
+      function subscribe(symbol) {
+        if (!symbol) return;
+        log(`Subscribing to ${SYMBOL_NAMES[symbol] || symbol} (${symbol})`, 'info');
+        if (send({ ticks: symbol, subscribe: 1 })) {
+          activeSymbol = symbol;
+          selectedMarketBadge.textContent = symbol;
+          marketSelect.value = symbol;
+          resetSession();
+        }
+      }
+
+      function forgetAll(cb) {
+        if (!ws || ws.readyState !== WebSocket.OPEN) { if (cb) cb(); return; }
+        isForgetting = true;
+        log('Forgetting all tick subscriptions…', 'info');
+        send({ forget_all: 'ticks' });
+        setTimeout(() => { if (cb) cb(); setTimeout(() => { isForgetting = false; }, 200); }, 150);
+      }
+
+      function changeMarket(sym) {
+        if (!sym) return;
+        if (connectionStatus === 'connected' && ws && ws.readyState === WebSocket.OPEN) {
+          if (activeSymbol === sym && !isForgetting) { log('Already subscribed.', 'info'); return; }
+          forgetAll(() => subscribe(sym));
+        } else if (connectionStatus === 'connecting' || connectionStatus === 'reconnecting') {
+          pendingSymbol = sym; selectedMarketBadge.textContent = sym + ' (pending)'; marketSelect.value = sym;
+        } else {
+          pendingSymbol = sym; selectedMarketBadge.textContent = sym + ' (pending)'; marketSelect.value = sym;
+          initiateConnection();
+        }
+      }
+
+      function handleTick(tick) {
+        if (!tick || typeof tick.quote === 'undefined') return;
+        const q = String(tick.quote), price = parseFloat(q), last = q.slice(-1);
+        if (isNaN(price)) return;
+        currentPrice.textContent = price.toFixed(q.includes('.') ? q.split('.')[1].length : 2);
+        lastDigit.textContent = last;
+        lastDigit.style.textShadow = parseInt(last) >= 5 ? '0 0 50px rgba(6,182,212,0.7)' : '0 0 50px rgba(139,92,246,0.5)';
+        sessionTicks++;
+        if (firstTickPrice === null) { firstTickPrice = price; prevTickPrice = price; sessionProfit.textContent = '0.00'; sessionProfitPercent.textContent = '0.00%'; sessionProfit.className = 'text-3xl sm:text-4xl font-bold font-mono tabular-nums value-transition tracking-tight text-white'; }
+        const change = price - firstTickPrice, changePct = firstTickPrice ? (change / firstTickPrice * 100) : 0;
+        sessionProfit.textContent = (change>=0?'+':'') + change.toFixed(2);
+        sessionProfitPercent.textContent = (changePct>=0?'+':'') + changePct.toFixed(4) + '%';
+        sessionTicksCount.textContent = `${sessionTicks.toLocaleString()} tick${sessionTicks!==1?'s':''}`;
+        sessionProfit.classList.remove('text-positive','text-negative','text-white');
+        if (change > 0.005) sessionProfit.classList.add('text-positive');
+        else if (change < -0.005) sessionProfit.classList.add('text-negative');
+        else sessionProfit.classList.add('text-white');
+
+        if (prevTickPrice !== null && price !== prevTickPrice) {
+          const delta = price - prevTickPrice;
+          priceChangeIndicator.classList.remove('opacity-0');
+          if (delta > 0.001) { priceChangeArrow.textContent = '▲'; priceChangeArrow.className = 'text-positive'; priceChangeText.textContent = `+${delta.toFixed(4)}`; priceChangeText.className = 'text-positive'; }
+          else if (delta < -0.001) { priceChangeArrow.textContent = '▼'; priceChangeArrow.className = 'text-negative'; priceChangeText.textContent = `${delta.toFixed(4)}`; priceChangeText.className = 'text-negative'; }
+          else { priceChangeArrow.textContent = '●'; priceChangeArrow.className = 'text-muted'; priceChangeText.textContent = 'Unchanged'; priceChangeText.className = 'text-muted'; }
+        }
+        prevTickPrice = price;
+        tickLogCounter++;
+        if (tickLogCounter % 25 === 0 || sessionTicks <= 3) log(`Tick #${sessionTicks} | ${tick.symbol||activeSymbol} | ${q} | last: ${last}`, 'tick');
+      }
+
+      function handleError(err) { log(`API Error [${err?.code||'?'}]: ${err?.message||'Unknown'}`, 'error'); }
+      function handleBalance(data) {
+        if (data?.balance?.balance !== undefined) {
+          accountBalance.textContent = parseFloat(data.balance.balance).toFixed(2);
+          log(`Balance: ${accountBalance.textContent} ${data.balance.currency||'USD'}`, 'success');
+        }
+      }
+
+      function handleAuthorize(data) {
+        if (data?.error) {
+          isAuthorized = false;
+          authStatus.textContent = `❌ ${data.error.message}`;
+          authStatus.className = 'text-negative text-[10px] mt-1';
+          log(`Authorization error: ${data.error.message}`, 'error');
+        } else if (data?.authorize) {
+          isAuthorized = true;
+          authStatus.textContent = '✅ Authorized';
+          authStatus.className = 'text-positive text-[10px] mt-1';
+          log('Token authorized.', 'success');
+          send({ balance: 1, subscribe: 1 });
+        } else {
+          isAuthorized = false;
+          authStatus.textContent = '❌ Authorization failed (unknown)';
+          authStatus.className = 'text-negative text-[10px] mt-1';
+        }
+      }
+
+      function handleBuy(data) {
+        const buy = data?.buy;
+        if (!buy) return;
+        if (buy.error) {
+          tradeResult.textContent = `Trade failed: ${buy.error.message}`;
+          tradeResult.className = 'text-negative text-xs mt-3';
+          log(`Trade error: ${buy.error.message}`, 'error');
+        } else {
+          tradeResult.textContent = `✅ Contract ${buy.contract_id}, payout: ${buy.payout||'?'}`;
+          tradeResult.className = 'text-positive text-xs mt-3';
+          log(`Trade placed – ID: ${buy.contract_id}`, 'success');
+        }
+        tradeResult.classList.remove('hidden');
+      }
+
+      function processMessage(raw) {
+        let data;
+        try { data = JSON.parse(raw); } catch(e) { log(`Parse error: ${e.message}`, 'error'); return; }
+        switch (data?.msg_type) {
+          case 'ping': send({ pong: 1 }); break;
+          case 'tick': if (data.tick) handleTick(data.tick); if (data.subscription?.id) { tickSubId = data.subscription.id; log(`Sub ID: ${tickSubId}`, 'success'); } break;
+          case 'balance': handleBalance(data); break;
+          case 'authorize': handleAuthorize(data); break;
+          case 'buy': handleBuy(data); break;
+          case 'error': handleError(data?.error || { message: data?.error?.message || 'Unknown' }); break;
+          case 'forget_all': tickSubId = null; isForgetting = false; log('Ticks forgotten.', 'info'); break;
+          case 'forget': if (data.forget === tickSubId) tickSubId = null; break;
+          case 'website_status': log(`Deriv status: ${data.website_status?.message||'OK'}`, 'info'); break;
+        }
+      }
+
+      function initiateConnection() {
+        clearPing();
+        if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
+        if (ws) {
+          try { ws.onopen=ws.onclose=ws.onerror=ws.onmessage=null; if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) ws.close(1000); } catch(e) {}
+          ws = null;
+        }
+        setStatus('connecting');
+        log(`Connecting… (attempt ${reconnectAttempts+1})`, 'info');
+        try { ws = new WebSocket(WS_ENDPOINT); } catch(e) { log(`WS constructor error: ${e.message}`, 'error'); setStatus('disconnected'); scheduleReconnect(); return; }
+        ws.onopen = () => {
+          log('WebSocket connected.', 'success');
+          setStatus('connected');
+          clearPing();
+          pingInterval = setInterval(() => { if (ws && ws.readyState === WebSocket.OPEN) { try { ws.send(JSON.stringify({ ping:1 })); } catch(e) { clearPing(); } } else clearPing(); }, PING_INTERVAL);
+          const token = apiTokenInput.value.trim();
+          if (token && !isAuthorized) { log('Auto‑authorizing…', 'info'); send({ authorize: token }); }
+          else if (!token) send({ balance: 1, subscribe: 1 });
+          if (pendingSymbol) { const s = pendingSymbol; pendingSymbol = null; subscribe(s); }
+          else if (!activeSymbol) subscribe('1HZ100V');
+          else if (activeSymbol && !isForgetting) subscribe(activeSymbol);
         };
+        ws.onclose = (e) => {
+          log(`WebSocket closed – code: ${e.code||'N/A'}`, 'warning');
+          clearPing(); tickSubId = null;
+          if (connectionStatus === 'connected' || connectionStatus === 'connecting') { setStatus('disconnected'); scheduleReconnect(); }
+        };
+        ws.onerror = () => log('WebSocket error.', 'error');
+        ws.onmessage = (e) => {
+          if (typeof e.data === 'string') e.data.split(/\r?\n/).filter(m=>m.trim()).forEach(processMessage);
+          else if (e.data instanceof Blob) { const r = new FileReader(); r.onload = () => processMessage(r.result); r.readAsText(e.data); }
+        };
+      }
 
-        // ─────────────────────────────────────
-        // DOM REFERENCES
-        // ─────────────────────────────────────
-        const $statusDot = document.getElementById('statusDot');
-        const $statusLabel = document.getElementById('statusLabel');
-        const $accountBalance = document.getElementById('accountBalance');
-        const $marketSelect = document.getElementById('marketSelect');
-        const $selectedMarketBadge = document.getElementById('selectedMarketBadge');
-        const $currentPrice = document.getElementById('currentPrice');
-        const $priceChangeIndicator = document.getElementById('priceChangeIndicator');
-        const $priceChangeArrow = document.getElementById('priceChangeArrow');
-        const $priceChangeText = document.getElementById('priceChangeText');
-        const $lastDigit = document.getElementById('lastDigit');
-        const $sessionProfit = document.getElementById('sessionProfit');
-        const $sessionProfitPercent = document.getElementById('sessionProfitPercent');
-        const $sessionTicksCount = document.getElementById('sessionTicksCount');
-        const $consoleLog = document.getElementById('consoleLog');
-        const $consoleEntryCount = document.getElementById('consoleEntryCount');
-        const $clearConsoleBtn = document.getElementById('clearConsoleBtn');
-        const $currentYear = document.getElementById('currentYear');
-        // Trading elements
-        const $apiTokenInput = document.getElementById('apiTokenInput');
-        const $authorizeBtn = document.getElementById('authorizeBtn');
-        const $authStatus = document.getElementById('authStatus');
-        const $stakeInput = document.getElementById('stakeInput');
-        const $durationInput = document.getElementById('durationInput');
-        const $buyCallBtn = document.getElementById('buyCallBtn');
-        const $buyPutBtn = document.getElementById('buyPutBtn');
-        const $tradeResult = document.getElementById('tradeResult');
+      function scheduleReconnect() {
+        clearPing();
+        if (reconnectTimer) clearTimeout(reconnectTimer);
+        if (reconnectAttempts >= MAX_RECONNECT) { log('Max reconnect attempts reached.', 'error'); setStatus('disconnected'); return; }
+        reconnectAttempts++;
+        setStatus('reconnecting');
+        reconnectTimer = setTimeout(() => { reconnectTimer = null; initiateConnection(); }, RECONNECT_DELAY);
+      }
 
-        let webSocket = null;
-        let connectionStatus = 'disconnected';
-        let activeSymbol = null;
-        let pendingSymbol = null;
-        let reconnectAttempts = 0;
-        let reconnectTimer = null;
-        let pingInterval = null;
-        let tickSubscriptionId = null;
-        let firstTickPrice = null;
-        let previousTickPrice = null;
-        let sessionTickCount = 0;
-        let consoleEntryCounter = 0;
-        let tickLogCounter = 0;
-        let isForgettingTicks = false;
-        let isAuthorized = false;
+      // Contract UI mapping
+      const contractTypes = {
+        rise_fall: { label1:'CALL (Rise)', label2:'PUT (Fall)', type1:'CALL', type2:'PUT', params:'' },
+        digits: { label1:'Digit Match', label2:'Digit Diff', type1:'DIGITMATCH', type2:'DIGITDIFF', params:'<div class="lg:col-span-2"><label class="text-xs text-muted">Digit</label><input id="digitParam" type="number" value="5" min="0" max="9" class="w-full bg-surface border border-border rounded-lg px-3 py-2 text-sm text-white"></div>' },
+        over_under: { label1:'Digit Over', label2:'Digit Under', type1:'DIGITOVER', type2:'DIGITUNDER', params:'<div class="lg:col-span-2"><label class="text-xs text-muted">Digit</label><input id="digitParam" type="number" value="5" min="0" max="9" class="w-full bg-surface border border-border rounded-lg px-3 py-2 text-sm text-white"></div>' },
+        even_odd: { label1:'Digit Even', label2:'Digit Odd', type1:'DIGITEVEN', type2:'DIGITODD', params:'' },
+        high_low: { label1:'Tick High', label2:'Tick Low', type1:'TICKHIGH', type2:'TICKLOW', params:'' },
+        asian: { label1:'Asian Up', label2:'Asian Down', type1:'ASIANU', type2:'ASIAND', params:'' },
+        reset: { label1:'Reset Call', label2:'Reset Put', type1:'RESETCALL', type2:'RESETPUT', params:'' },
+        accumulator: { label1:'Accumulator (CALL)', label2:'Accumulator (PUT)', type1:'ACCU', type2:'ACCP', params:'<div class="lg:col-span-2"><label class="text-xs text-muted">Growth Rate</label><input id="growthRate" type="number" value="0.01" step="0.001" class="w-full bg-surface border border-border rounded-lg px-3 py-2 text-sm text-white"></div>' }
+      };
 
-        // ─────────────────────────────────────
-        // HELPER FUNCTIONS
-        // ─────────────────────────────────────
-        function logToConsole(message, type = 'info') {
-            const timestamp = new Date().toLocaleTimeString('en-GB', { hour12: false, hour: '2-digit',
-                minute: '2-digit', second: '2-digit' });
-            const colorMap = {
-                'info': 'text-console-info',
-                'success': 'text-console-text',
-                'warning': 'text-console-warn',
-                'error': 'text-console-error',
-                'tick': 'text-console-text opacity-60',
-            };
-            const prefixMap = {
-                'info': '[INFO]',
-                'success': '[OK]',
-                'warning': '[WARN]',
-                'error': '[ERR]',
-                'tick': '[TICK]',
-            };
-            const colorClass = colorMap[type] || colorMap['info'];
-            const prefix = prefixMap[type] || prefixMap['info'];
-            const entry = document.createElement('div');
-            entry.className = `${colorClass} animate-slide-up`;
-            entry.innerHTML = `<span class="text-muted/50">${timestamp}</span> <span class="font-semibold">${prefix}</span> ${escapeHTML(message)}`;
-            $consoleLog.appendChild(entry);
-            $consoleLog.scrollTop = $consoleLog.scrollHeight;
-            consoleEntryCounter++;
-            $consoleEntryCount.textContent = `${consoleEntryCounter} entry${consoleEntryCounter !== 1 ? 'es' : ''}`;
-            while ($consoleLog.children.length > 500) {
-                $consoleLog.removeChild($consoleLog.firstChild);
-            }
+      function updateContractUI(type) {
+        currentContractType = type;
+        const c = contractTypes[type];
+        buyBtn1.textContent = `▲ ${c.label1}`;
+        buyBtn2.textContent = `▼ ${c.label2}`;
+        contractParams.innerHTML = c.params || '';
+        // Highlight active tab
+        document.querySelectorAll('.trade-type-btn').forEach(b => b.classList.remove('border-accent', 'bg-accent/10'));
+        document.querySelector(`[data-contract="${type}"]`).classList.add('border-accent', 'bg-accent/10');
+      }
+
+      function placeTrade(contractType) {
+        if (!isAuthorized) { alert('Authorize first.'); return; }
+        if (!activeSymbol) { alert('No market selected.'); return; }
+        const stake = parseFloat(stakeInput.value);
+        const duration = parseInt(durationInput.value);
+        if (isNaN(stake) || stake < 0.35) { alert('Min stake 0.35'); return; }
+        if (isNaN(duration) || duration < 1) { alert('Duration >= 1'); return; }
+        const params = { amount: stake, basis: "stake", contract_type: contractType, currency: "USD", duration, duration_unit: "t", symbol: activeSymbol };
+        // Additional parameters
+        if (currentContractType === 'digits' || currentContractType === 'over_under') {
+          const digit = parseInt(document.getElementById('digitParam')?.value);
+          if (isNaN(digit) || digit < 0 || digit > 9) { alert('Digit 0-9 required'); return; }
+          params.barrier = digit;
         }
-
-        function escapeHTML(str) {
-            const div = document.createElement('div');
-            div.appendChild(document.createTextNode(str));
-            return div.innerHTML;
+        if (currentContractType === 'accumulator') {
+          const growth = parseFloat(document.getElementById('growthRate')?.value);
+          if (isNaN(growth) || growth <= 0) { alert('Growth rate > 0'); return; }
+          params.growth_rate = growth;
         }
+        send({ buy: 1, price: stake, parameters: params });
+        tradeResult.classList.add('hidden');
+      }
 
-        function clearConsole() {
-            $consoleLog.innerHTML = '';
-            consoleEntryCounter = 0;
-            $consoleEntryCount.textContent = '0 entries';
-            logToConsole('Console cleared.', 'info');
+      // Event listeners
+      marketSelect.addEventListener('change', () => { if (marketSelect.value) { reconnectAttempts=0; if(reconnectTimer){clearTimeout(reconnectTimer);reconnectTimer=null;} changeMarket(marketSelect.value); } });
+      clearConsoleBtn.addEventListener('click', clearConsole);
+      authorizeBtn.addEventListener('click', () => {
+        const token = apiTokenInput.value.trim();
+        if (!token) { alert('Enter token'); return; }
+        if (ws && ws.readyState === WebSocket.OPEN) send({ authorize: token });
+        else alert('Not connected.');
+      });
+      buyBtn1.addEventListener('click', () => placeTrade(contractTypes[currentContractType].type1));
+      buyBtn2.addEventListener('click', () => placeTrade(contractTypes[currentContractType].type2));
+
+      document.querySelectorAll('.trade-type-btn').forEach(btn => {
+        btn.addEventListener('click', () => updateContractUI(btn.dataset.contract));
+      });
+
+      window.addEventListener('beforeunload', () => { clearPing(); if(reconnectTimer)clearTimeout(reconnectTimer); reconnectAttempts=MAX_RECONNECT; if(ws&&ws.readyState===WebSocket.OPEN) try{ws.send(JSON.stringify({forget_all:'ticks'}));}catch(e){} });
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible' && connectionStatus === 'disconnected' && reconnectAttempts < MAX_RECONNECT) {
+          if (!ws || ws.readyState !== WebSocket.OPEN) { reconnectAttempts=0; initiateConnection(); }
         }
+      });
 
-        function clearPingInterval() {
-            if (pingInterval) {
-                clearInterval(pingInterval);
-                pingInterval = null;
-            }
-        }
-
-        function setConnectionStatus(status) {
-            connectionStatus = status;
-            $statusDot.classList.remove('bg-red-500', 'bg-yellow-500', 'bg-green-500', 'animate-pulse-dot', 'shadow-md');
-            switch (status) {
-                case 'connected':
-                    $statusDot.classList.add('bg-green-500', 'animate-pulse-dot');
-                    $statusDot.style.boxShadow = '0 0 10px rgba(16,185,129,0.6)';
-                    $statusLabel.textContent = 'Connected';
-                    $statusLabel.classList.remove('text-muted', 'text-warning', 'text-negative');
-                    $statusLabel.classList.add('text-positive');
-                    reconnectAttempts = 0;
-                    break;
-                case 'connecting':
-                    $statusDot.classList.add('bg-yellow-500');
-                    $statusDot.style.boxShadow = '0 0 8px rgba(245,158,11,0.5)';
-                    $statusLabel.textContent = 'Connecting...';
-                    $statusLabel.classList.remove('text-muted', 'text-positive', 'text-negative');
-                    $statusLabel.classList.add('text-warning');
-                    break;
-                case 'reconnecting':
-                    $statusDot.classList.add('bg-yellow-500');
-                    $statusDot.style.boxShadow = '0 0 8px rgba(245,158,11,0.5)';
-                    $statusLabel.textContent = `Reconnecting (${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})`;
-                    $statusLabel.classList.remove('text-muted', 'text-positive', 'text-negative');
-                    $statusLabel.classList.add('text-warning');
-                    break;
-                case 'disconnected':
-                default:
-                    $statusDot.classList.add('bg-red-500');
-                    $statusDot.style.boxShadow = '0 0 6px rgba(239,68,68,0.4)';
-                    $statusLabel.textContent = 'Offline';
-                    $statusLabel.classList.remove('text-positive', 'text-warning');
-                    $statusLabel.classList.add('text-negative');
-                    break;
-            }
-        }
-
-        function resetSessionMetrics() {
-            firstTickPrice = null;
-            previousTickPrice = null;
-            sessionTickCount = 0;
-            tickLogCounter = 0;
-            $sessionProfit.textContent = '0.00';
-            $sessionProfit.classList.remove('text-positive', 'text-negative');
-            $sessionProfit.classList.add('text-white');
-            $sessionProfitPercent.textContent = '0.00%';
-            $sessionTicksCount.textContent = '0 ticks';
-            $priceChangeIndicator.classList.add('opacity-0');
-            $priceChangeArrow.textContent = '●';
-            $priceChangeText.textContent = 'Waiting for data...';
-            $currentPrice.textContent = '—.——';
-            $lastDigit.textContent = '—';
-            $lastDigit.style.textShadow = '0 0 40px rgba(6,182,212,0.5)';
-        }
-
-        function sendWSMessage(payload) {
-            if (!webSocket || webSocket.readyState !== WebSocket.OPEN) {
-                logToConsole('Cannot send message — WebSocket is not open.', 'warning');
-                return false;
-            }
-            try {
-                webSocket.send(JSON.stringify(payload));
-                return true;
-            } catch (err) {
-                logToConsole(`Failed to send payload: ${err.message}`, 'error');
-                return false;
-            }
-        }
-
-        function subscribeToTicks(symbol) {
-            if (!symbol) return;
-            const displayName = SYMBOL_DISPLAY_NAMES[symbol] || symbol;
-            logToConsole(`Subscribing to tick stream: ${displayName} (${symbol})`, 'info');
-            const payload = { ticks: symbol, subscribe: 1 };
-            if (sendWSMessage(payload)) {
-                activeSymbol = symbol;
-                $selectedMarketBadge.textContent = symbol;
-                $marketSelect.value = symbol;
-                resetSessionMetrics();
-                logToConsole(`Tick subscription request sent for ${symbol}.`, 'success');
-            }
-        }
-
-        function forgetAllTicks(callback) {
-            if (!webSocket || webSocket.readyState !== WebSocket.OPEN) {
-                if (typeof callback === 'function') callback();
-                return;
-            }
-            isForgettingTicks = true;
-            logToConsole('Sending forget_all request for all tick subscriptions...', 'info');
-            if (sendWSMessage({ forget_all: 'ticks' })) {
-                setTimeout(() => {
-                    if (typeof callback === 'function') callback();
-                    setTimeout(() => { isForgettingTicks = false; }, 200);
-                }, 150);
-            } else {
-                isForgettingTicks = false;
-                if (typeof callback === 'function') callback();
-            }
-        }
-
-        function changeMarket(newSymbol) {
-            if (!newSymbol) return;
-            const displayName = SYMBOL_DISPLAY_NAMES[newSymbol] || newSymbol;
-            if (connectionStatus === 'connected' && webSocket && webSocket.readyState === WebSocket.OPEN) {
-                if (activeSymbol === newSymbol && !isForgettingTicks) {
-                    logToConsole(`Already subscribed to ${displayName}.`, 'info');
-                    return;
-                }
-                logToConsole(`Switching market to: ${displayName} (${newSymbol})`, 'info');
-                forgetAllTicks(() => { subscribeToTicks(newSymbol); });
-            } else if (connectionStatus === 'connecting' || connectionStatus === 'reconnecting') {
-                pendingSymbol = newSymbol;
-                $selectedMarketBadge.textContent = newSymbol + ' (pending)';
-                $marketSelect.value = newSymbol;
-                logToConsole(`Connection in progress — queuing ${displayName}`, 'warning');
-            } else {
-                pendingSymbol = newSymbol;
-                $selectedMarketBadge.textContent = newSymbol + ' (pending)';
-                $marketSelect.value = newSymbol;
-                logToConsole(`Not connected. Will connect and subscribe to ${displayName}`, 'info');
-                initiateWebSocketConnection();
-            }
-        }
-
-        function handleTickData(tick) {
-            if (!tick || typeof tick.quote === 'undefined') return;
-            const quoteStr = String(tick.quote);
-            const price = parseFloat(quoteStr);
-            const lastDigitChar = quoteStr.slice(-1);
-            if (isNaN(price)) return;
-            const formattedPrice = price.toFixed(quoteStr.includes('.') ? quoteStr.split('.')[1].length : 2);
-            $currentPrice.textContent = formattedPrice;
-            $lastDigit.textContent = lastDigitChar;
-            const digitNum = parseInt(lastDigitChar, 10);
-            if (!isNaN(digitNum) && digitNum >= 5) {
-                $lastDigit.style.textShadow = '0 0 50px rgba(6,182,212,0.7)';
-            } else if (!isNaN(digitNum)) {
-                $lastDigit.style.textShadow = '0 0 50px rgba(139,92,246,0.5)';
-            }
-            sessionTickCount++;
-            if (firstTickPrice === null) {
-                firstTickPrice = price;
-                previousTickPrice = price;
-                $sessionProfit.textContent = '0.00';
-                $sessionProfitPercent.textContent = '0.00%';
-                $sessionProfit.classList.remove('text-positive', 'text-negative');
-                $sessionProfit.classList.add('text-white');
-            }
-            const sessionChange = price - firstTickPrice;
-            const sessionChangePercent = firstTickPrice !== 0 ? ((sessionChange / firstTickPrice) * 100) : 0;
-            $sessionProfit.textContent = (sessionChange >= 0 ? '+' : '') + sessionChange.toFixed(2);
-            $sessionProfitPercent.textContent = (sessionChangePercent >= 0 ? '+' : '') + sessionChangePercent.toFixed(4) + '%';
-            $sessionTicksCount.textContent = `${sessionTickCount.toLocaleString()} tick${sessionTickCount !== 1 ? 's' : ''}`;
-            $sessionProfit.classList.remove('text-positive', 'text-negative', 'text-white');
-            if (sessionChange > 0.005) $sessionProfit.classList.add('text-positive');
-            else if (sessionChange < -0.005) $sessionProfit.classList.add('text-negative');
-            else $sessionProfit.classList.add('text-white');
-            if (previousTickPrice !== null && price !== previousTickPrice) {
-                const tickDelta = price - previousTickPrice;
-                $priceChangeIndicator.classList.remove('opacity-0');
-                if (tickDelta > 0.001) {
-                    $priceChangeArrow.textContent = '▲'; $priceChangeArrow.className = 'text-positive';
-                    $priceChangeText.textContent = `+${tickDelta.toFixed(4)} from last tick`; $priceChangeText.className = 'text-positive';
-                } else if (tickDelta < -0.001) {
-                    $priceChangeArrow.textContent = '▼'; $priceChangeArrow.className = 'text-negative';
-                    $priceChangeText.textContent = `${tickDelta.toFixed(4)} from last tick`; $priceChangeText.className = 'text-negative';
-                } else {
-                    $priceChangeArrow.textContent = '●'; $priceChangeArrow.className = 'text-muted';
-                    $priceChangeText.textContent = 'Unchanged'; $priceChangeText.className = 'text-muted';
-                }
-            }
-            previousTickPrice = price;
-            tickLogCounter++;
-            if (tickLogCounter % TICK_LOG_INTERVAL === 0 || sessionTickCount <= 3) {
-                logToConsole(`Tick #${sessionTickCount} | ${tick.symbol || activeSymbol} | Quote: ${quoteStr} | Last digit: ${lastDigitChar}`, 'tick');
-            }
-        }
-
-        function handleAPIError(errorObj) {
-            const code = errorObj?.code || 'UnknownCode';
-            const message = errorObj?.message || 'No error message provided';
-            logToConsole(`API Error [${code}]: ${message}`, 'error');
-            if (code === 'InvalidSymbol' || message.toLowerCase().includes('invalid')) {
-                $selectedMarketBadge.textContent = 'INVALID';
-                $currentPrice.textContent = 'Error';
-                $lastDigit.textContent = '!';
-            }
-        }
-
-        function handleBalanceResponse(data) {
-            if (data?.balance?.balance !== undefined) {
-                const balance = parseFloat(data.balance.balance);
-                if (!isNaN(balance)) {
-                    $accountBalance.textContent = balance.toFixed(2);
-                    logToConsole(`Account balance updated: ${balance.toFixed(2)} ${data.balance.currency || 'USD'}`, 'success');
-                }
-            }
-        }
-
-        function handleAuthorizeResponse(data) {
-            if (data?.authorize) {
-                isAuthorized = true;
-                $authStatus.textContent = '✅ Authorized';
-                $authStatus.className = 'text-positive text-[10px] mt-1';
-                logToConsole('API token authorized successfully.', 'success');
-                sendWSMessage({ balance: 1, subscribe: 1 });
-            } else {
-                isAuthorized = false;
-                $authStatus.textContent = '❌ Authorization failed';
-                $authStatus.className = 'text-negative text-[10px] mt-1';
-                logToConsole('Authorization failed. Check your token.', 'error');
-            }
-        }
-
-        function handleBuyResponse(data) {
-            const buy = data?.buy;
-            if (!buy) return;
-            if (buy.error) {
-                $tradeResult.textContent = `Trade failed: ${buy.error.message}`;
-                $tradeResult.className = 'text-negative text-xs mt-3';
-                logToConsole(`Trade error: ${buy.error.message}`, 'error');
-            } else {
-                const contractId = buy.contract_id;
-                const payout = buy.payout || 'unknown';
-                $tradeResult.textContent = `✅ Trade placed! Contract ID: ${contractId}, potential payout: ${payout}`;
-                $tradeResult.className = 'text-positive text-xs mt-3';
-                logToConsole(`Trade successful – Contract ID: ${contractId}, payout: ${payout}`, 'success');
-            }
-            $tradeResult.classList.remove('hidden');
-        }
-
-        function placeTrade(contractType) {
-            if (!isAuthorized) {
-                alert('Please authorize with your API token first.');
-                return;
-            }
-            if (!activeSymbol) {
-                alert('No market selected.');
-                return;
-            }
-            const stake = parseFloat($stakeInput.value);
-            const duration = parseInt($durationInput.value, 10);
-            if (isNaN(stake) || stake < 0.35) {
-                alert('Minimum stake is 0.35 USD');
-                return;
-            }
-            if (isNaN(duration) || duration < 1 || duration > 10) {
-                alert('Duration must be between 1 and 10 ticks.');
-                return;
-            }
-
-            const contract = {
-                buy: 1,
-                price: stake,
-                parameters: {
-                    amount: stake,
-                    basis: "stake",
-                    contract_type: contractType, // CALL or PUT
-                    currency: "USD",
-                    duration: duration,
-                    duration_unit: "t",
-                    symbol: activeSymbol
-                }
-            };
-            sendWSMessage(contract);
-            $tradeResult.classList.add('hidden');
-        }
-
-        function processInboundMessage(rawData) {
-            let data;
-            try {
-                data = JSON.parse(rawData);
-            } catch (parseErr) {
-                logToConsole(`Failed to parse inbound message: ${parseErr.message}`, 'error');
-                return;
-            }
-            const msgType = data?.msg_type;
-            switch (msgType) {
-                case 'ping':
-                    sendWSMessage({ pong: 1 });
-                    break;
-                case 'tick':
-                    if (data?.tick) handleTickData(data.tick);
-                    if (data?.subscription?.id) {
-                        tickSubscriptionId = data.subscription.id;
-                        logToConsole(`Tick subscription confirmed. ID: ${tickSubscriptionId}`, 'success');
-                    }
-                    break;
-                case 'balance':
-                    handleBalanceResponse(data);
-                    break;
-                case 'authorize':
-                    handleAuthorizeResponse(data);
-                    break;
-                case 'buy':
-                    handleBuyResponse(data);
-                    break;
-                case 'error':
-                    handleAPIError(data?.error || { message: data?.error?.message || 'Unknown error' });
-                    break;
-                case 'forget_all':
-                    logToConsole(`Ticks forgotten successfully. (${(data?.forget_all || []).length} subscription(s) cleared)`, 'info');
-                    tickSubscriptionId = null;
-                    isForgettingTicks = false;
-                    break;
-                case 'forget':
-                    logToConsole(`Single subscription forgotten: ${data?.forget || 'unknown'}`, 'info');
-                    if (data?.forget === tickSubscriptionId) tickSubscriptionId = null;
-                    break;
-                case 'website_status':
-                    logToConsole(`Deriv API status: ${data?.website_status?.message || 'Operational'}`, 'info');
-                    break;
-                default: break;
-            }
-        }
-
-        function initiateWebSocketConnection() {
-            clearPingInterval();
-            if (reconnectTimer) {
-                clearTimeout(reconnectTimer);
-                reconnectTimer = null;
-            }
-            if (webSocket) {
-                try {
-                    webSocket.onopen = null; webSocket.onclose = null;
-                    webSocket.onerror = null; webSocket.onmessage = null;
-                    if (webSocket.readyState === WebSocket.OPEN || webSocket.readyState === WebSocket.CONNECTING) {
-                        webSocket.close(1000, 'Client reconnecting');
-                    }
-                } catch (e) {}
-                webSocket = null;
-            }
-            setConnectionStatus('connecting');
-            logToConsole(`Connecting to Deriv WebSocket... (Attempt ${reconnectAttempts + 1})`, 'info');
-            logToConsole(`Endpoint: ${WS_ENDPOINT}`, 'info');
-            try {
-                webSocket = new WebSocket(WS_ENDPOINT);
-            } catch (err) {
-                logToConsole(`WebSocket constructor failed: ${err.message}`, 'error');
-                setConnectionStatus('disconnected');
-                scheduleReconnect();
-                return;
-            }
-            webSocket.onopen = function() {
-                logToConsole('WebSocket connection established successfully.', 'success');
-                setConnectionStatus('connected');
-                reconnectAttempts = 0;
-                clearPingInterval();
-                pingInterval = setInterval(() => {
-                    if (webSocket && webSocket.readyState === WebSocket.OPEN) {
-                        try {
-                            webSocket.send(JSON.stringify({ ping: 1 }));
-                            if (Math.random() < 0.1) logToConsole('Client heartbeat sent.', 'info');
-                        } catch (err) {
-                            logToConsole(`Heartbeat send failed: ${err.message}`, 'error');
-                            clearPingInterval();
-                        }
-                    } else {
-                        clearPingInterval();
-                    }
-                }, PING_INTERVAL_MS);
-
-                // Auto‑authorize if token is present (pre‑filled)
-                const token = $apiTokenInput.value.trim();
-                if (token && !isAuthorized) {
-                    logToConsole('Auto‑authorizing with provided token…', 'info');
-                    sendWSMessage({ authorize: token });
-                } else if (!token) {
-                    sendWSMessage({ balance: 1, subscribe: 1 });
-                }
-
-                if (pendingSymbol) {
-                    const sym = pendingSymbol;
-                    pendingSymbol = null;
-                    subscribeToTicks(sym);
-                } else if (!activeSymbol) {
-                    subscribeToTicks('1HZ100V');
-                } else if (activeSymbol && !isForgettingTicks) {
-                    subscribeToTicks(activeSymbol);
-                }
-            };
-            webSocket.onclose = function(event) {
-                logToConsole(`WebSocket closed — Code: ${event.code || 'N/A'}, Reason: ${event.reason || 'No reason'}`, 'warning');
-                clearPingInterval();
-                tickSubscriptionId = null;
-                if (connectionStatus === 'connected' || connectionStatus === 'connecting') {
-                    setConnectionStatus('disconnected');
-                    scheduleReconnect();
-                }
-            };
-            webSocket.onerror = function() {
-                logToConsole('WebSocket error occurred.', 'error');
-            };
-            webSocket.onmessage = function(event) {
-                if (typeof event.data === 'string') {
-                    event.data.split(/\r?\n/).filter(m => m.trim()).forEach(processInboundMessage);
-                } else if (event.data instanceof Blob) {
-                    const reader = new FileReader();
-                    reader.onload = () => processInboundMessage(reader.result);
-                    reader.onerror = () => logToConsole('Failed to read binary message.', 'error');
-                    reader.readAsText(event.data);
-                }
-            };
-        }
-
-        function scheduleReconnect() {
-            clearPingInterval();
-            if (reconnectTimer) clearTimeout(reconnectTimer);
-            if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
-                logToConsole(`Max reconnection attempts (${MAX_RECONNECT_ATTEMPTS}) reached.`, 'error');
-                setConnectionStatus('disconnected');
-                return;
-            }
-            reconnectAttempts++;
-            setConnectionStatus('reconnecting');
-            reconnectTimer = setTimeout(() => {
-                reconnectTimer = null;
-                initiateWebSocketConnection();
-            }, RECONNECT_DELAY_MS);
-        }
-
-        // ────────────── EVENT LISTENERS ──────────────
-        $marketSelect.addEventListener('change', function() {
-            const selectedSymbol = $marketSelect.value;
-            if (selectedSymbol) {
-                reconnectAttempts = 0;
-                if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
-                changeMarket(selectedSymbol);
-            }
-        });
-        $clearConsoleBtn.addEventListener('click', clearConsole);
-
-        $authorizeBtn.addEventListener('click', function() {
-            const token = $apiTokenInput.value.trim();
-            if (!token) {
-                alert('Please enter a valid API token.');
-                return;
-            }
-            if (webSocket && webSocket.readyState === WebSocket.OPEN) {
-                logToConsole('Manual authorization requested.', 'info');
-                sendWSMessage({ authorize: token });
-            } else {
-                alert('WebSocket not connected. Retry after connection.');
-            }
-        });
-
-        $buyCallBtn.addEventListener('click', () => placeTrade('CALL'));
-        $buyPutBtn.addEventListener('click', () => placeTrade('PUT'));
-
-        window.addEventListener('beforeunload', function() {
-            clearPingInterval();
-            if (reconnectTimer) clearTimeout(reconnectTimer);
-            reconnectAttempts = MAX_RECONNECT_ATTEMPTS;
-            if (webSocket && webSocket.readyState === WebSocket.OPEN) {
-                try { webSocket.send(JSON.stringify({ forget_all: 'ticks' })); } catch (e) {}
-            }
-        });
-
-        document.addEventListener('visibilitychange', function() {
-            if (document.visibilityState === 'visible' && connectionStatus === 'disconnected' && reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
-                if (!webSocket || webSocket.readyState !== WebSocket.OPEN) {
-                    reconnectAttempts = 0;
-                    initiateWebSocketConnection();
-                }
-            }
-        });
-
-        function initialize() {
-            $currentYear.textContent = new Date().getFullYear();
-            setConnectionStatus('disconnected');
-            $accountBalance.textContent = '0.00';
-            $currentPrice.textContent = '—.——';
-            $lastDigit.textContent = '—';
-            $sessionProfit.textContent = '0.00';
-            $sessionProfitPercent.textContent = '0.00%';
-            $sessionTicksCount.textContent = '0 ticks';
-            $selectedMarketBadge.textContent = '—';
-            $authStatus.textContent = 'Auto‑authorizing on connect…';
-            logToConsole('══════════════════════════════════', 'info');
-            logToConsole('🚀 Khanfx_Hub Trading Dashboard Initialized', 'success');
-            logToConsole(`App ID: ${APP_ID} (public test)`, 'info');
-            logToConsole('API token pre‑configured – will auto‑authorize on connection.', 'info');
-            logToConsole('══════════════════════════════════', 'info');
-            initiateWebSocketConnection();
-        }
-
-        initialize();
+      // Init
+      currentYear.textContent = new Date().getFullYear();
+      setStatus('disconnected');
+      updateContractUI('rise_fall');
+      log('🚀 Khanfx_Hub — Full Deriv Trading Ready');
+      log(`App ID: ${APP_ID} (public test)`, 'info');
+      log('Token pre‑configured – auto‑authorizing on connect.', 'info');
+      initiateConnection();
     })();
-</script>
+  </script>
 </body>
 </html>
