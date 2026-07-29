@@ -1,407 +1,579 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Khanfx_Hub — Trading Terminal</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        surface: '#0f172a', card: '#1e293b', border: '#334155',
-                        accent: '#06b6d4', positive: '#10b981', negative: '#ef4444',
-                        muted: '#94a3b8', 'console-bg': '#0a0f1a', 'console-text': '#a5f0c5',
-                    }
-                }
-            }
-        }
-    </script>
-    <style>
-        .console-scroll::-webkit-scrollbar { width: 5px; }
-        .console-scroll::-webkit-scrollbar-track { background: #0a0f1a; }
-        .console-scroll::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
-        #tour-overlay { backdrop-filter: blur(8px); }
-        .tour-slide { display: none; }
-        .tour-slide.active { display: block; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Khanfx_Hub — Trading Terminal</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            surface: '#0f172a', card: '#1e293b', border: '#334155',
+            accent: '#06b6d4', 'accent-dim': '#0891b2', positive: '#10b981',
+            negative: '#ef4444', muted: '#94a3b8',
+            'console-bg': '#0a0f1a', 'console-text': '#a5f0c5',
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'Fira Code', 'monospace'],
+          },
+        },
+      },
+    }
+  </script>
+  <style>
+    .console-scroll::-webkit-scrollbar { width: 5px; }
+    .console-scroll::-webkit-scrollbar-track { background: #0a0f1a; }
+    .console-scroll::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+    .sidebar-item { transition: all 0.2s; }
+    .sidebar-item.active { background: rgba(6,182,212,0.1); border-left: 3px solid #06b6d4; }
+    #tour-overlay { backdrop-filter: blur(8px); }
+    .tour-slide { display: none; }
+    .tour-slide.active { display: block; }
+    .card-hover { transition: border-color 0.2s, box-shadow 0.2s; }
+    .card-hover:hover { border-color: #475569; box-shadow: 0 0 20px rgba(6,182,212,0.06); }
+  </style>
 </head>
 <body class="bg-surface text-slate-200 font-sans min-h-screen flex flex-col">
 
-    <!-- ========== TOUR OVERLAY ========== -->
-    <div id="tour-overlay" class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
-        <div class="bg-card border border-border rounded-2xl max-w-md w-full p-6 shadow-2xl">
-            <div id="tour-slide-1" class="tour-slide active text-center space-y-4">
-                <h2 class="text-2xl font-bold text-white">🚀 Welcome to Khanfx_Hub</h2>
-                <p class="text-sm text-muted">Let's take a quick tour.</p>
-                <div class="flex justify-center gap-4 mt-6">
-                    <button id="tour-skip" class="px-5 py-2 border border-border rounded-lg hover:bg-surface/60 text-sm">Skip</button>
-                    <button class="tour-next px-5 py-2 bg-accent hover:bg-accent-dim text-white text-sm font-semibold rounded-lg">Start →</button>
-                </div>
-            </div>
-            <div id="tour-slide-2" class="tour-slide text-center space-y-4">
-                <h3 class="text-xl font-semibold text-white">📈 Live Charts & Trading</h3>
-                <p class="text-sm text-muted">Trade synthetic indices directly from your browser.</p>
-                <div class="flex justify-center gap-4 mt-6">
-                    <button class="tour-prev px-5 py-2 border border-border rounded-lg hover:bg-surface/60 text-sm">Back</button>
-                    <button id="tour-finish" class="px-5 py-2 bg-accent hover:bg-accent-dim text-white text-sm font-semibold rounded-lg">Get Started</button>
-                </div>
-            </div>
+  <!-- ========== TOUR OVERLAY ========== -->
+  <div id="tour-overlay" class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+    <div class="bg-card border border-border rounded-2xl max-w-md w-full p-6 shadow-2xl">
+      <div id="tour-slide-1" class="tour-slide active text-center space-y-4">
+        <h2 class="text-2xl font-bold text-white">🚀 Welcome to Khanfx_Hub</h2>
+        <p class="text-sm text-muted">Your automated trading terminal for Deriv.</p>
+        <div class="flex justify-center gap-4 mt-6">
+          <button id="tour-skip" class="px-5 py-2 border border-border rounded-lg hover:bg-surface/60 text-sm">Skip</button>
+          <button class="tour-next px-5 py-2 bg-accent hover:bg-accent-dim text-white text-sm font-semibold rounded-lg">Start →</button>
         </div>
+      </div>
+      <div id="tour-slide-2" class="tour-slide text-center space-y-4">
+        <h3 class="text-xl font-semibold text-white">📈 Live Charts & Trading</h3>
+        <p class="text-sm text-muted">Trade synthetic indices with one click.</p>
+        <div class="flex justify-center gap-4 mt-6">
+          <button class="tour-prev px-5 py-2 border border-border rounded-lg hover:bg-surface/60 text-sm">Back</button>
+          <button id="tour-finish" class="px-5 py-2 bg-accent hover:bg-accent-dim text-white text-sm font-semibold rounded-lg">Get Started</button>
+        </div>
+      </div>
     </div>
+  </div>
 
-    <!-- ========== HEADER ========== -->
-    <header class="bg-card border-b border-border px-4 py-3 flex items-center justify-between shadow-lg z-30">
-        <div class="flex items-center gap-3">
-            <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-accent to-accent-dim flex items-center justify-center text-white font-bold">KH</div>
-            <h1 class="text-lg font-bold text-white">Khanfx_Hub</h1>
-        </div>
-        <div class="flex items-center gap-4">
-            <div id="status-indicator" class="hidden items-center gap-2">
-                <span id="statusDot" class="w-3 h-3 rounded-full bg-red-500"></span>
-                <span id="statusLabel" class="text-xs text-muted">Offline</span>
-            </div>
-            <div id="balance-display" class="hidden items-center gap-2 bg-surface/60 px-3 py-1 rounded-lg border border-border/60">
-                <span class="text-xs text-muted">Balance</span>
-                <span id="accountBalance" class="text-sm font-bold text-white font-mono">0.00</span>
-            </div>
-            <button id="login-button" class="px-4 py-2 bg-accent hover:bg-accent-dim text-white text-sm font-semibold rounded-lg">Login</button>
-            <button id="logout-button" class="hidden px-4 py-2 bg-surface border border-border text-white text-sm rounded-lg hover:bg-surface/60">Logout</button>
-        </div>
-    </header>
-
-    <!-- ========== LOGIN MODAL ========== -->
-    <div id="login-modal" class="fixed inset-0 bg-black/50 z-40 hidden flex items-center justify-center p-4">
-        <div class="bg-card border border-border rounded-xl max-w-sm w-full p-6 shadow-2xl">
-            <h2 class="text-lg font-bold text-white mb-4">🔐 Connect to Deriv</h2>
-            <button id="oauth-login-btn" class="w-full mb-3 py-3 bg-accent hover:bg-accent-dim text-white font-semibold rounded-lg transition">Login with Deriv (OAuth)</button>
-            <div class="flex items-center gap-3 my-3">
-                <div class="flex-1 h-px bg-border"></div>
-                <span class="text-xs text-muted">or use API token</span>
-                <div class="flex-1 h-px bg-border"></div>
-            </div>
-            <input id="manual-token-input" type="password" placeholder="Paste your API token here"
-                   class="w-full bg-surface border border-border rounded-lg px-3 py-2 text-sm text-white mb-3 focus:outline-none focus:border-accent">
-            <button id="manual-login-btn" class="w-full py-3 bg-surface border border-border hover:bg-surface/60 text-white font-semibold rounded-lg transition">Connect with Token</button>
-            <button id="close-login-modal" class="w-full mt-3 py-2 text-xs text-muted hover:text-white">Cancel</button>
-        </div>
+  <!-- ========== HEADER ========== -->
+  <header class="bg-card border-b border-border px-4 py-3 flex items-center justify-between shadow-lg z-30">
+    <div class="flex items-center gap-3">
+      <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-accent to-accent-dim flex items-center justify-center text-white font-bold">KH</div>
+      <h1 class="text-lg font-bold text-white">Khanfx_Hub</h1>
     </div>
-
-    <!-- ========== SIDEBAR + MAIN ========== -->
-    <div class="flex flex-1 overflow-hidden">
-        <aside id="sidebar" class="hidden lg:flex flex-col bg-card border-r border-border w-64 p-4 space-y-2 overflow-y-auto">
-            <div class="sidebar-item active px-3 py-2 rounded-lg cursor-pointer text-sm" data-tab="dtrader">📊 DTrader</div>
-            <div class="sidebar-item px-3 py-2 rounded-lg cursor-pointer text-sm" data-tab="charts">📈 Charts</div>
-            <div class="sidebar-item px-3 py-2 rounded-lg cursor-pointer text-sm" data-tab="bots">🤖 Trading Bots</div>
-            <div class="sidebar-item px-3 py-2 rounded-lg cursor-pointer text-sm" data-tab="editor">🧩 Bot Editor</div>
-            <div class="sidebar-item px-3 py-2 rounded-lg cursor-pointer text-sm" data-tab="analysis">📉 Analysis</div>
-            <div class="sidebar-item px-3 py-2 rounded-lg cursor-pointer text-sm" data-tab="strategies">🧠 Strategies</div>
-        </aside>
-
-        <main class="flex-1 p-4 sm:p-6 overflow-y-auto">
-            <!-- DTrader tab -->
-            <div id="tab-dtrader" class="tab-content space-y-5">
-                <section class="bg-card border border-border rounded-xl p-4 card-hover">
-                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                        <div><h2 class="text-sm font-semibold text-white uppercase">Market</h2><p class="text-xs text-muted">Synthetic indices</p></div>
-                        <select id="marketSelect" class="w-full sm:w-72 bg-surface border border-border text-white rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-accent">
-                            <option value="" disabled selected>— Select Market —</option>
-                            <optgroup label="⚡ 1-Second">
-                                <option value="1HZ100V">Volatility 100 (1s)</option><option value="1HZ75V">Volatility 75 (1s)</option><option value="1HZ50V">Volatility 50 (1s)</option>
-                            </optgroup>
-                            <optgroup label="📊 Standard">
-                                <option value="R_100">Volatility 100</option><option value="R_75">Volatility 75</option><option value="R_50">Volatility 50</option>
-                            </optgroup>
-                        </select>
-                    </div>
-                </section>
-                <section class="bg-card border border-border rounded-xl p-4 card-hover">
-                    <div id="chart-container" style="width:100%; height:400px;"></div>
-                </section>
-                <section class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <div class="bg-card border border-border rounded-xl p-4 card-hover">
-                        <span class="text-xs text-muted uppercase">Price</span>
-                        <span id="currentPrice" class="text-3xl font-bold text-white font-mono block">—.——</span>
-                        <span id="lastDigit" class="text-5xl font-black text-accent font-mono block mt-2">—</span>
-                    </div>
-                    <div class="bg-card border border-border rounded-xl p-4 card-hover">
-                        <span class="text-xs text-muted uppercase">Session</span>
-                        <span id="sessionProfit" class="text-3xl font-bold font-mono text-white block">0.00</span>
-                        <span id="sessionProfitPercent" class="text-xs text-muted font-mono">0.00%</span>
-                    </div>
-                </section>
-                <section class="bg-card border border-border rounded-xl p-4 card-hover">
-                    <h2 class="text-sm font-semibold text-white uppercase mb-3">⚡ Trade</h2>
-                    <div class="flex flex-wrap gap-2 mb-4">
-                        <button data-contract="rise_fall" class="contract-btn bg-surface border border-border rounded-lg px-3 py-1.5 text-xs hover:border-accent active-tab">Rise/Fall</button>
-                        <button data-contract="digits" class="contract-btn bg-surface border border-border rounded-lg px-3 py-1.5 text-xs hover:border-accent">Digits</button>
-                        <button data-contract="over_under" class="contract-btn bg-surface border border-border rounded-lg px-3 py-1.5 text-xs hover:border-accent">Over/Under</button>
-                        <button data-contract="even_odd" class="contract-btn bg-surface border border-border rounded-lg px-3 py-1.5 text-xs hover:border-accent">Even/Odd</button>
-                    </div>
-                    <div id="contractParams" class="grid grid-cols-2 gap-3 mb-3"></div>
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                        <input id="stakeInput" type="number" value="1" min="0.35" step="0.01" class="bg-surface border border-border rounded-lg px-3 py-2 text-sm text-white">
-                        <input id="durationInput" type="number" value="5" min="1" step="1" class="bg-surface border border-border rounded-lg px-3 py-2 text-sm text-white">
-                        <div class="flex gap-2">
-                            <button id="buyBtn1" class="flex-1 bg-positive hover:bg-green-600 text-white font-bold py-3 rounded-lg text-sm uppercase">▲ Rise</button>
-                            <button id="buyBtn2" class="flex-1 bg-negative hover:bg-red-600 text-white font-bold py-3 rounded-lg text-sm uppercase">▼ Fall</button>
-                        </div>
-                    </div>
-                </section>
-                <section class="bg-card border border-border rounded-xl overflow-hidden card-hover">
-                    <div class="flex items-center justify-between px-4 py-3 border-b border-border bg-surface/40">
-                        <h2 class="text-sm font-semibold text-white uppercase">Console</h2>
-                        <button id="clearConsoleBtn" class="text-xs text-muted hover:text-white">Clear</button>
-                    </div>
-                    <div id="consoleLog" class="console-scroll bg-console-bg text-console-text font-mono text-xs p-4 h-48 overflow-y-auto"></div>
-                </section>
-            </div>
-            <!-- Other tabs (placeholders) -->
-            <div id="tab-charts" class="tab-content hidden"><div class="bg-card border border-border rounded-xl p-6 text-muted text-center">📈 Charts module</div></div>
-            <div id="tab-bots" class="tab-content hidden"><div class="bg-card border border-border rounded-xl p-6 text-muted text-center">🤖 Bots</div></div>
-            <div id="tab-editor" class="tab-content hidden"><div class="bg-card border border-border rounded-xl p-6 text-muted text-center">🧩 Editor</div></div>
-            <div id="tab-analysis" class="tab-content hidden"><div class="bg-card border border-border rounded-xl p-6 text-muted text-center">📉 Analysis</div></div>
-            <div id="tab-strategies" class="tab-content hidden"><div class="bg-card border border-border rounded-xl p-6 text-muted text-center">🧠 Strategies</div></div>
-        </main>
+    <div class="flex items-center gap-4">
+      <div id="status-indicator" class="hidden items-center gap-2">
+        <span id="statusDot" class="w-3 h-3 rounded-full bg-red-500"></span>
+        <span id="statusLabel" class="text-xs text-muted">Offline</span>
+      </div>
+      <div id="balance-display" class="hidden items-center gap-2 bg-surface/60 px-3 py-1 rounded-lg border border-border/60">
+        <span class="text-xs text-muted">Balance</span>
+        <span id="accountBalance" class="text-sm font-bold text-white font-mono">0.00</span>
+      </div>
+      <button id="login-button" class="px-4 py-2 bg-accent hover:bg-accent-dim text-white text-sm font-semibold rounded-lg">Login</button>
+      <button id="logout-button" class="hidden px-4 py-2 bg-surface border border-border text-white text-sm rounded-lg hover:bg-surface/60">Logout</button>
     </div>
+  </header>
 
-    <footer class="bg-card border-t border-border px-4 py-2 text-center text-[10px] text-muted">
-        Khanfx_Hub &copy; <span id="currentYear"></span> — powered by Deriv API
-    </footer>
+  <!-- ========== LOGIN MODAL ========== -->
+  <div id="login-modal" class="fixed inset-0 bg-black/50 z-40 hidden flex items-center justify-center p-4">
+    <div class="bg-card border border-border rounded-xl max-w-sm w-full p-6 shadow-2xl">
+      <h2 class="text-lg font-bold text-white mb-4">🔐 Connect to Deriv</h2>
+      <button id="oauth-login-btn" class="w-full mb-3 py-3 bg-accent hover:bg-accent-dim text-white font-semibold rounded-lg transition">Login with Deriv (OAuth)</button>
+      <div class="flex items-center gap-3 my-3">
+        <div class="flex-1 h-px bg-border"></div>
+        <span class="text-xs text-muted">or use API token</span>
+        <div class="flex-1 h-px bg-border"></div>
+      </div>
+      <input id="manual-token-input" type="password" placeholder="Paste your API token"
+             class="w-full bg-surface border border-border rounded-lg px-3 py-2 text-sm text-white mb-3 focus:outline-none focus:border-accent">
+      <button id="manual-login-btn" class="w-full py-3 bg-surface border border-border hover:bg-surface/60 text-white font-semibold rounded-lg transition">Connect with Token</button>
+      <button id="close-login-modal" class="w-full mt-3 py-2 text-xs text-muted hover:text-white">Cancel</button>
+    </div>
+  </div>
 
-    <script>
-        (function() {
-            // ====================== CONFIG ======================
-            const APP_ID = '33qUaFT0pPP4bUDrITabh';
-            const WS_ENDPOINT = `wss://ws.derivws.com/websockets/v3?app_id=${APP_ID}`;
-            const REDIRECT_URI = window.location.origin + window.location.pathname;
-            const OAUTH_URL = `https://oauth.deriv.com/oauth2/authorize?app_id=${APP_ID}&l=en&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&response_type=token&state=kh`;
+  <!-- ========== SIDEBAR + MAIN ========== -->
+  <div class="flex flex-1 overflow-hidden">
+    <aside id="sidebar" class="hidden lg:flex flex-col bg-card border-r border-border w-64 p-4 space-y-2 overflow-y-auto">
+      <div class="sidebar-item active px-3 py-2 rounded-lg cursor-pointer text-sm" data-tab="dtrader">📊 DTrader</div>
+      <div class="sidebar-item px-3 py-2 rounded-lg cursor-pointer text-sm" data-tab="charts">📈 Charts</div>
+      <div class="sidebar-item px-3 py-2 rounded-lg cursor-pointer text-sm" data-tab="bots">🤖 Trading Bots</div>
+      <div class="sidebar-item px-3 py-2 rounded-lg cursor-pointer text-sm" data-tab="editor">🧩 Bot Editor</div>
+      <div class="sidebar-item px-3 py-2 rounded-lg cursor-pointer text-sm" data-tab="analysis">📉 Analysis Tools</div>
+      <div class="sidebar-item px-3 py-2 rounded-lg cursor-pointer text-sm" data-tab="strategies">🧠 Strategies</div>
+    </aside>
 
-            // DOM elements
-            const $ = id => document.getElementById(id);
-            const loginBtn = $('login-button'), logoutBtn = $('logout-button'), statusIndicator = $('status-indicator'), balanceDisplay = $('balance-display');
-            const loginModal = $('login-modal'), oauthLoginBtn = $('oauth-login-btn'), manualLoginBtn = $('manual-login-btn'), manualTokenInput = $('manual-token-input'), closeLoginModal = $('close-login-modal');
-            const sidebar = $('sidebar'), marketSelect = $('marketSelect'), chartContainer = $('chart-container');
-            let currentTab = 'dtrader', isAuthorized = false, userToken = null, activeSymbol = null;
-            let ws = null, chart = null, candleSeries = null, currentCandle = null;
+    <main class="flex-1 p-4 sm:p-6 overflow-y-auto">
+      <!-- DTrader Tab -->
+      <div id="tab-dtrader" class="tab-content space-y-5">
+        <!-- Market Selector -->
+        <section class="bg-card border border-border rounded-xl p-4 card-hover">
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div>
+              <h2 class="text-sm font-semibold text-white uppercase">Market Selector</h2>
+              <p class="text-xs text-muted">Synthetic indices – real‑time ticks</p>
+            </div>
+            <select id="marketSelect" class="w-full sm:w-72 bg-surface border border-border text-white rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-accent">
+              <option value="" disabled selected>— Select Market —</option>
+              <optgroup label="⚡ 1-Second Volatility">
+                <option value="1HZ100V">Volatility 100 (1s)</option>
+                <option value="1HZ75V">Volatility 75 (1s)</option>
+                <option value="1HZ50V">Volatility 50 (1s)</option>
+              </optgroup>
+              <optgroup label="📊 Standard Volatility">
+                <option value="R_100">Volatility 100</option>
+                <option value="R_75">Volatility 75</option>
+                <option value="R_50">Volatility 50</option>
+              </optgroup>
+            </select>
+          </div>
+        </section>
 
-            // Tour logic
-            function initTour() {
-                const slides = document.querySelectorAll('.tour-slide');
-                let currentSlide = 0;
-                function showSlide(i) { slides.forEach((s,idx) => s.classList.toggle('active', idx===i)); }
-                document.querySelectorAll('.tour-next').forEach(b => b.addEventListener('click', () => { currentSlide++; showSlide(currentSlide); }));
-                document.querySelectorAll('.tour-prev').forEach(b => b.addEventListener('click', () => { currentSlide--; showSlide(currentSlide); }));
-                $('tour-skip').addEventListener('click', () => $('tour-overlay').classList.add('hidden'));
-                $('tour-finish').addEventListener('click', () => $('tour-overlay').classList.add('hidden'));
-                if (localStorage.getItem('kh_tour_done') === '1') $('tour-overlay').classList.add('hidden');
-                else localStorage.setItem('kh_tour_done', '1');
-            }
+        <!-- Chart -->
+        <section class="bg-card border border-border rounded-xl p-4 card-hover">
+          <div id="chart-container" style="width:100%; height:400px;"></div>
+        </section>
 
-            // Sidebar tabs
-            document.querySelectorAll('.sidebar-item').forEach(item => {
-                item.addEventListener('click', () => switchTab(item.dataset.tab));
-            });
-            function switchTab(tabId) {
-                document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
-                $(`tab-${tabId}`).classList.remove('hidden');
-                document.querySelectorAll('.sidebar-item').forEach(el => el.classList.remove('active'));
-                document.querySelector(`[data-tab="${tabId}"]`).classList.add('active');
-                currentTab = tabId;
-                if (tabId === 'dtrader' && chart) chart.resize();
-            }
+        <!-- Data Cards -->
+        <section class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div class="bg-card border border-border rounded-xl p-4 card-hover">
+            <span class="text-xs text-muted uppercase">Price</span>
+            <span id="currentPrice" class="text-3xl font-bold text-white font-mono block">—.——</span>
+            <span id="lastDigit" class="text-5xl font-black text-accent font-mono block mt-2">—</span>
+          </div>
+          <div class="bg-card border border-border rounded-xl p-4 card-hover">
+            <span class="text-xs text-muted uppercase">Session</span>
+            <span id="sessionProfit" class="text-3xl font-bold font-mono text-white block">0.00</span>
+            <span id="sessionProfitPercent" class="text-xs text-muted font-mono">0.00%</span>
+          </div>
+          <div class="bg-card border border-border rounded-xl p-4 card-hover flex flex-col justify-between">
+            <span class="text-xs text-muted uppercase">Ticks</span>
+            <span id="sessionTicksCount" class="text-2xl font-bold text-white">0</span>
+          </div>
+        </section>
 
-            // Auth and WebSocket
-            function parseHashToken() {
-                const hash = window.location.hash.substring(1);
-                if (!hash) return false;
-                const params = new URLSearchParams(hash);
-                const token = params.get('access_token');
-                if (token) {
-                    userToken = token;
-                    sessionStorage.setItem('deriv_token', userToken);
-                    history.replaceState(null, '', window.location.pathname);
-                    return true;
-                }
-                return false;
-            }
+        <!-- Trading Panel -->
+        <section class="bg-card border border-border rounded-xl p-4 card-hover">
+          <h2 class="text-sm font-semibold text-white uppercase mb-3">⚡ Place Trade</h2>
+          <div class="flex flex-wrap gap-2 mb-4">
+            <button data-contract="rise_fall" class="contract-btn bg-surface border border-border rounded-lg px-3 py-1.5 text-xs hover:border-accent active-tab">Rise/Fall</button>
+            <button data-contract="digits" class="contract-btn bg-surface border border-border rounded-lg px-3 py-1.5 text-xs hover:border-accent">Digits</button>
+            <button data-contract="over_under" class="contract-btn bg-surface border border-border rounded-lg px-3 py-1.5 text-xs hover:border-accent">Over/Under</button>
+            <button data-contract="even_odd" class="contract-btn bg-surface border border-border rounded-lg px-3 py-1.5 text-xs hover:border-accent">Even/Odd</button>
+          </div>
+          <div id="contractParams" class="grid grid-cols-2 gap-3 mb-3"></div>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <input id="stakeInput" type="number" value="1" min="0.35" step="0.01" class="bg-surface border border-border rounded-lg px-3 py-2 text-sm text-white">
+            <input id="durationInput" type="number" value="5" min="1" step="1" class="bg-surface border border-border rounded-lg px-3 py-2 text-sm text-white">
+            <div class="flex gap-2">
+              <button id="buyBtn1" class="flex-1 bg-positive hover:bg-green-600 text-white font-bold py-3 rounded-lg text-sm uppercase">▲ Rise</button>
+              <button id="buyBtn2" class="flex-1 bg-negative hover:bg-red-600 text-white font-bold py-3 rounded-lg text-sm uppercase">▼ Fall</button>
+            </div>
+          </div>
+          <div id="tradeResult" class="mt-2 text-xs hidden"></div>
+        </section>
 
-            function connectWithToken(token) {
-                userToken = token;
-                sessionStorage.setItem('deriv_token', token);
-                isAuthorized = false;
-                loginModal.classList.add('hidden');
-                if (ws) { ws.close(); ws = null; }
-                openWebSocket();
-            }
+        <!-- Console -->
+        <section class="bg-card border border-border rounded-xl overflow-hidden card-hover">
+          <div class="flex items-center justify-between px-4 py-3 border-b border-border bg-surface/40">
+            <h2 class="text-sm font-semibold text-white uppercase">Console</h2>
+            <button id="clearConsoleBtn" class="text-xs text-muted hover:text-white">Clear</button>
+          </div>
+          <div id="consoleLog" class="console-scroll bg-console-bg text-console-text font-mono text-xs p-4 h-48 overflow-y-auto"></div>
+        </section>
+      </div>
 
-            function openWebSocket() {
-                if (!userToken) return;
-                if (ws) { ws.close(); ws = null; }
-                setStatus('connecting');
-                ws = new WebSocket(WS_ENDPOINT);
-                ws.onopen = () => {
-                    setStatus('connected');
-                    ws.send(JSON.stringify({ authorize: userToken }));
-                };
-                ws.onmessage = (e) => {
-                    const data = JSON.parse(e.data);
-                    if (data.msg_type === 'authorize') {
-                        if (data.error) { log('Auth failed: '+data.error.message, 'error'); logout(); }
-                        else { isAuthorized = true; updateUIForAuth(); ws.send(JSON.stringify({ balance: 1, subscribe: 1 })); }
-                    } else if (data.msg_type === 'tick' && data.tick) updateTick(data.tick);
-                    else if (data.msg_type === 'balance') { if (data.balance?.balance) $('accountBalance').textContent = parseFloat(data.balance.balance).toFixed(2); }
-                    else if (data.msg_type === 'buy') log('Trade placed', 'success');
-                    else if (data.msg_type === 'error') log(data.error?.message, 'error');
-                };
-                ws.onclose = () => { if (!isAuthorized) logout(); else setStatus('disconnected'); };
-                ws.onerror = () => log('WebSocket error', 'error');
-            }
+      <!-- Charts Tab -->
+      <div id="tab-charts" class="tab-content hidden space-y-5">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div class="bg-card border border-border rounded-xl p-4 card-hover">
+            <h3 class="text-sm font-semibold text-white mb-3">📈 Volatility 100</h3>
+            <div id="chart-tab-1" style="width:100%; height:300px;" class="bg-surface/40 rounded-lg"></div>
+          </div>
+          <div class="bg-card border border-border rounded-xl p-4 card-hover">
+            <h3 class="text-sm font-semibold text-white mb-3">📉 Volatility 75</h3>
+            <div id="chart-tab-2" style="width:100%; height:300px;" class="bg-surface/40 rounded-lg"></div>
+          </div>
+        </div>
+        <div class="bg-card border border-border rounded-xl p-4 card-hover text-center text-muted text-sm">
+          Advanced multi‑chart layout – coming soon.
+        </div>
+      </div>
 
-            function logout() {
-                userToken = null; isAuthorized = false;
-                sessionStorage.removeItem('deriv_token');
-                if (ws) { ws.close(); ws = null; }
-                updateUIForAuth();
-                setStatus('disconnected');
-            }
+      <!-- Trading Bots Tab -->
+      <div id="tab-bots" class="tab-content hidden">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div class="bg-card border border-border rounded-xl p-4 card-hover">
+            <h3 class="text-sm font-semibold text-white">⚡ Trend Follower</h3>
+            <p class="text-xs text-muted mt-2">Buys when price crosses above a moving average.</p>
+            <div class="mt-3 flex gap-2">
+              <span class="px-2 py-1 bg-positive/20 text-positive text-xs rounded-full">Active</span>
+              <span class="px-2 py-1 bg-surface/60 text-xs rounded-full">R_100</span>
+            </div>
+          </div>
+          <div class="bg-card border border-border rounded-xl p-4 card-hover">
+            <h3 class="text-sm font-semibold text-white">📉 Mean Reversion</h3>
+            <p class="text-xs text-muted mt-2">Sells when price deviates too far from the mean.</p>
+            <div class="mt-3 flex gap-2">
+              <span class="px-2 py-1 bg-yellow-500/20 text-yellow-400 text-xs rounded-full">Paused</span>
+              <span class="px-2 py-1 bg-surface/60 text-xs rounded-full">1HZ100V</span>
+            </div>
+          </div>
+          <div class="bg-card border border-border rounded-xl p-4 card-hover">
+            <h3 class="text-sm font-semibold text-white">🧪 Martingale Bot</h3>
+            <p class="text-xs text-muted mt-2">Doubles stake after each loss.</p>
+            <div class="mt-3 flex gap-2">
+              <span class="px-2 py-1 bg-surface/60 text-xs rounded-full">Not running</span>
+            </div>
+          </div>
+        </div>
+        <div class="mt-4 bg-card border border-border rounded-xl p-4 card-hover text-center">
+          <button class="px-4 py-2 bg-accent hover:bg-accent-dim text-white text-sm rounded-lg">+ Create New Bot</button>
+        </div>
+      </div>
 
-            function updateUIForAuth() {
-                if (isAuthorized) {
-                    loginBtn.classList.add('hidden'); logoutBtn.classList.remove('hidden');
-                    statusIndicator.classList.remove('hidden'); balanceDisplay.classList.remove('hidden');
-                    sidebar.classList.remove('hidden');
-                    switchTab('dtrader');
-                } else {
-                    loginBtn.classList.remove('hidden'); logoutBtn.classList.add('hidden');
-                    statusIndicator.classList.add('hidden'); balanceDisplay.classList.add('hidden');
-                    sidebar.classList.add('hidden');
-                }
-            }
+      <!-- Bot Editor Tab -->
+      <div id="tab-editor" class="tab-content hidden">
+        <div class="bg-card border border-border rounded-xl p-4 card-hover">
+          <h3 class="text-sm font-semibold text-white mb-4">🧩 Visual Strategy Builder</h3>
+          <div class="flex flex-col lg:flex-row gap-4">
+            <div class="flex-1 bg-surface/40 rounded-lg p-4 border border-border min-h-[300px] flex items-center justify-center text-muted text-sm">
+              <span>Drag and drop indicators here (canvas placeholder)</span>
+            </div>
+            <div class="w-full lg:w-64 space-y-3">
+              <div class="bg-surface border border-border rounded-lg p-3 text-xs cursor-move hover:border-accent">
+                <span class="text-white font-semibold">📊 RSI</span>
+                <p class="text-muted">Relative Strength Index</p>
+              </div>
+              <div class="bg-surface border border-border rounded-lg p-3 text-xs cursor-move hover:border-accent">
+                <span class="text-white font-semibold">📈 Moving Average</span>
+                <p class="text-muted">Simple / Exponential</p>
+              </div>
+              <div class="bg-surface border border-border rounded-lg p-3 text-xs cursor-move hover:border-accent">
+                <span class="text-white font-semibold">⏱️ Tick Counter</span>
+                <p class="text-muted">Delay action for N ticks</p>
+              </div>
+              <button class="w-full py-2 bg-accent hover:bg-accent-dim text-white text-sm rounded-lg">💾 Save Bot</button>
+            </div>
+          </div>
+        </div>
+      </div>
 
-            function setStatus(status) {
-                const dot = $('statusDot'), label = $('statusLabel');
-                dot.classList.remove('bg-red-500','bg-yellow-500','bg-green-500');
-                if (status === 'connected') { dot.classList.add('bg-green-500'); label.textContent = 'Connected'; }
-                else if (status === 'connecting') { dot.classList.add('bg-yellow-500'); label.textContent = 'Connecting...'; }
-                else { dot.classList.add('bg-red-500'); label.textContent = 'Offline'; }
-            }
+      <!-- Analysis Tools Tab -->
+      <div id="tab-analysis" class="tab-content hidden">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div class="bg-card border border-border rounded-xl p-4 card-hover">
+            <h3 class="text-sm font-semibold text-white">📊 Market Sentiment</h3>
+            <div class="mt-2 h-20 bg-surface/40 rounded-lg flex items-center justify-center text-xs text-muted">Chart placeholder</div>
+          </div>
+          <div class="bg-card border border-border rounded-xl p-4 card-hover">
+            <h3 class="text-sm font-semibold text-white">📉 Volatility Meter</h3>
+            <div class="mt-2 h-20 bg-surface/40 rounded-lg flex items-center justify-center text-xs text-muted">Gauge placeholder</div>
+          </div>
+          <div class="bg-card border border-border rounded-xl p-4 card-hover">
+            <h3 class="text-sm font-semibold text-white">⏱️ Tick Speed</h3>
+            <div class="mt-2 text-2xl font-mono text-white">0 t/s</div>
+          </div>
+        </div>
+        <div class="mt-4 bg-card border border-border rounded-xl p-4 card-hover text-center text-muted text-sm">
+          Advanced analysis modules – integrate with real data later.
+        </div>
+      </div>
 
-            function log(msg, type='info') {
-                const consoleLog = $('consoleLog');
-                const entry = document.createElement('div');
-                entry.className = type === 'error' ? 'text-red-400' : 'text-green-300';
-                entry.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
-                consoleLog.appendChild(entry);
-                consoleLog.scrollTop = consoleLog.scrollHeight;
-            }
+      <!-- Strategies Tab -->
+      <div id="tab-strategies" class="tab-content hidden">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div class="bg-card border border-border rounded-xl p-4 card-hover">
+            <h3 class="text-sm font-semibold text-white">🏆 5‑Tick Scalping</h3>
+            <p class="text-xs text-muted mt-2">Buy on 3rd tick rise, sell on 2nd tick fall.</p>
+            <span class="mt-2 inline-block px-2 py-1 bg-positive/20 text-positive text-xs rounded-full">Popular</span>
+          </div>
+          <div class="bg-card border border-border rounded-xl p-4 card-hover">
+            <h3 class="text-sm font-semibold text-white">📈 Breakout Hunter</h3>
+            <p class="text-xs text-muted mt-2">Enter when price breaks above the 10‑tick high.</p>
+            <span class="mt-2 inline-block px-2 py-1 bg-accent/20 text-accent text-xs rounded-full">New</span>
+          </div>
+          <div class="bg-card border border-border rounded-xl p-4 card-hover">
+            <h3 class="text-sm font-semibold text-white">🧠 AI‑Based Entry</h3>
+            <p class="text-xs text-muted mt-2">Uses a simple neural net (coming soon).</p>
+            <span class="mt-2 inline-block px-2 py-1 bg-surface/60 text-xs rounded-full">Beta</span>
+          </div>
+        </div>
+        <div class="mt-4 bg-card border border-border rounded-xl p-4 card-hover text-center">
+          <button class="px-4 py-2 bg-accent hover:bg-accent-dim text-white text-sm rounded-lg">🔍 Browse Marketplace</button>
+        </div>
+      </div>
+    </main>
+  </div>
 
-            // Trading / Tick
-            function updateTick(tick) {
-                if (!tick || !tick.quote) return;
-                const price = parseFloat(tick.quote);
-                $('currentPrice').textContent = price.toFixed(tick.quote.includes('.') ? tick.quote.split('.')[1].length : 2);
-                $('lastDigit').textContent = tick.quote.slice(-1);
-                if (!chart) initChart();
-                if (candleSeries) {
-                    const time = tick.epoch ? Math.floor(tick.epoch) : Math.floor(Date.now()/1000);
-                    if (!currentCandle || time > currentCandle.time) {
-                        if (currentCandle) candleSeries.update(currentCandle);
-                        currentCandle = { time, open: price, high: price, low: price, close: price };
-                    } else {
-                        currentCandle.high = Math.max(currentCandle.high, price);
-                        currentCandle.low = Math.min(currentCandle.low, price);
-                        currentCandle.close = price;
-                    }
-                    candleSeries.update(currentCandle);
-                }
-            }
+  <footer class="bg-card border-t border-border px-4 py-2 text-center text-[10px] text-muted">
+    Khanfx_Hub &copy; <span id="currentYear"></span> — powered by Deriv API
+  </footer>
 
-            function initChart() {
-                chart = LightweightCharts.createChart(chartContainer, {
-                    layout: { background: { color: '#1e293b' }, textColor: '#94a3b8' },
-                    grid: { vertLines: { color: '#334155' }, horzLines: { color: '#334155' } },
-                });
-                candleSeries = chart.addCandlestickSeries({ upColor: '#10b981', downColor: '#ef4444' });
-                window.addEventListener('resize', () => chart.resize());
-            }
+  <script>
+    (function() {
+      // ====================== CONFIG ======================
+      const APP_ID = '33qUaFT0pPP4bUDrITabh';
+      const WS_ENDPOINT = `wss://ws.derivws.com/websockets/v3?app_id=${APP_ID}`;
+      const REDIRECT_URI = window.location.origin + window.location.pathname;
+      const OAUTH_URL = `https://oauth.deriv.com/oauth2/authorize?app_id=${APP_ID}&l=en&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&response_type=token&state=kh`;
 
-            function subscribe(symbol) {
-                if (ws && ws.readyState === WebSocket.OPEN) {
-                    ws.send(JSON.stringify({ ticks: symbol, subscribe: 1 }));
-                    activeSymbol = symbol;
-                }
-            }
+      // DOM
+      const $ = id => document.getElementById(id);
+      const loginBtn = $('login-button'), logoutBtn = $('logout-button');
+      const statusDot = $('statusDot'), statusLabel = $('statusLabel');
+      const balanceDisplay = $('balance-display'), accountBalance = $('accountBalance');
+      const sidebar = $('sidebar'), loginModal = $('login-modal');
+      const marketSelect = $('marketSelect');
+      const currentPrice = $('currentPrice'), lastDigit = $('lastDigit');
+      const sessionProfit = $('sessionProfit'), sessionProfitPercent = $('sessionProfitPercent');
+      const sessionTicksCount = $('sessionTicksCount');
+      const consoleLog = $('consoleLog');
+      const buyBtn1 = $('buyBtn1'), buyBtn2 = $('buyBtn2');
+      const stakeInput = $('stakeInput'), durationInput = $('durationInput');
+      const contractParams = $('contractParams');
 
-            marketSelect.addEventListener('change', () => {
-                if (marketSelect.value) subscribe(marketSelect.value);
-            });
+      // State
+      let ws = null, isAuthorized = false, userToken = null, activeSymbol = null;
+      let currentContract = 'rise_fall';
+      let chart = null, candleSeries = null, currentCandle = null;
 
-            // Trade buttons
-            let currentContract = 'rise_fall';
-            const contracts = {
-                rise_fall: { t1:'CALL', t2:'PUT', label1:'▲ Rise', label2:'▼ Fall' },
-                digits: { t1:'DIGITMATCH', t2:'DIGITDIFF', label1:'▲ Match', label2:'▼ Diff', extra:'digit' },
-                over_under: { t1:'DIGITOVER', t2:'DIGITUNDER', label1:'▲ Over', label2:'▼ Under', extra:'digit' },
-                even_odd: { t1:'DIGITEVEN', t2:'DIGITODD', label1:'▲ Even', label2:'▼ Odd' },
-            };
-            function updateContractUI() {
-                const c = contracts[currentContract];
-                $('buyBtn1').textContent = c.label1; $('buyBtn2').textContent = c.label2;
-                let html = '';
-                if (c.extra === 'digit') html = '<div><label class="text-xs text-muted">Digit</label><input id="digitParam" type="number" value="5" min="0" max="9" class="w-full bg-surface border border-border rounded-lg px-3 py-2 text-sm text-white"></div>';
-                $('contractParams').innerHTML = html;
-                document.querySelectorAll('.contract-btn').forEach(b => b.classList.remove('border-accent','bg-accent/10'));
-                document.querySelector(`[data-contract="${currentContract}"]`).classList.add('border-accent','bg-accent/10');
-            }
-            document.querySelectorAll('.contract-btn').forEach(b => {
-                b.addEventListener('click', () => { currentContract = b.dataset.contract; updateContractUI(); });
-            });
+      // ---------- Tour ----------
+      function initTour() {
+        const slides = document.querySelectorAll('.tour-slide');
+        let idx = 0;
+        function show(i) { slides.forEach((s,j) => s.classList.toggle('active', j===i)); }
+        document.querySelectorAll('.tour-next').forEach(b => b.addEventListener('click', () => { idx++; show(idx); }));
+        document.querySelectorAll('.tour-prev').forEach(b => b.addEventListener('click', () => { idx--; show(idx); }));
+        $('tour-skip').addEventListener('click', () => $('tour-overlay').classList.add('hidden'));
+        $('tour-finish').addEventListener('click', () => $('tour-overlay').classList.add('hidden'));
+        if (localStorage.getItem('kh_tour_done') === '1') $('tour-overlay').classList.add('hidden');
+        else localStorage.setItem('kh_tour_done', '1');
+      }
 
-            function placeTrade(type) {
-                if (!isAuthorized || !activeSymbol) return alert('Login and select market');
-                const stake = parseFloat($('stakeInput').value), duration = parseInt($('durationInput').value);
-                if (isNaN(stake) || stake < 0.35) return alert('Min stake 0.35');
-                const c = contracts[currentContract];
-                const params = { amount: stake, basis:"stake", contract_type: type==='rise'?c.t1:c.t2, currency:"USD", duration, duration_unit:"t", symbol: activeSymbol };
-                if (c.extra === 'digit') {
-                    const digit = parseInt(document.getElementById('digitParam')?.value);
-                    if (isNaN(digit) || digit<0||digit>9) return alert('Digit 0-9 required');
-                    params.barrier = digit;
-                }
-                ws.send(JSON.stringify({ buy: 1, price: stake, parameters: params }));
-            }
-            $('buyBtn1').addEventListener('click', () => placeTrade('rise'));
-            $('buyBtn2').addEventListener('click', () => placeTrade('fall'));
+      // ---------- Sidebar tabs ----------
+      document.querySelectorAll('.sidebar-item').forEach(item => {
+        item.addEventListener('click', () => {
+          document.querySelectorAll('.tab-content').forEach(t => t.classList.add('hidden'));
+          $(`tab-${item.dataset.tab}`).classList.remove('hidden');
+          document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('active'));
+          item.classList.add('active');
+          if (item.dataset.tab === 'dtrader' && chart) chart.resize();
+        });
+      });
 
-            // Login modal events
-            loginBtn.addEventListener('click', () => loginModal.classList.remove('hidden'));
-            closeLoginModal.addEventListener('click', () => loginModal.classList.add('hidden'));
-            oauthLoginBtn.addEventListener('click', () => window.location.href = OAUTH_URL);
-            manualLoginBtn.addEventListener('click', () => {
-                const token = manualTokenInput.value.trim();
-                if (!token) return alert('Enter a token');
-                connectWithToken(token);
-            });
+      // ---------- Auth ----------
+      function parseHashToken() {
+        const hash = window.location.hash.substring(1);
+        if (!hash) return false;
+        const params = new URLSearchParams(hash);
+        const token = params.get('access_token');
+        if (token) {
+          userToken = token;
+          sessionStorage.setItem('deriv_token', userToken);
+          history.replaceState(null, '', window.location.pathname);
+          return true;
+        }
+        return false;
+      }
 
-            // Initialization
-            function init() {
-                $('currentYear').textContent = new Date().getFullYear();
-                initTour();
-                updateContractUI();
-                if (parseHashToken()) {
-                    connectWithToken(userToken);
-                } else if (sessionStorage.getItem('deriv_token')) {
-                    userToken = sessionStorage.getItem('deriv_token');
-                    connectWithToken(userToken);
-                } else {
-                    updateUIForAuth();
-                }
-            }
-            window.addEventListener('load', init);
-        })();
-    </script>
+      function connect(token) {
+        userToken = token;
+        sessionStorage.setItem('deriv_token', token);
+        loginModal.classList.add('hidden');
+        if (ws) { ws.close(); ws = null; }
+        openWebSocket();
+      }
+
+      function openWebSocket() {
+        if (!userToken) return;
+        setStatus('connecting');
+        ws = new WebSocket(WS_ENDPOINT);
+        ws.onopen = () => {
+          setStatus('connected');
+          ws.send(JSON.stringify({ authorize: userToken }));
+        };
+        ws.onmessage = (e) => {
+          const data = JSON.parse(e.data);
+          if (data.msg_type === 'authorize') {
+            if (data.error) { log('Auth error: ' + data.error.message, 'error'); logout(); return; }
+            isAuthorized = true;
+            updateUIForAuth();
+            ws.send(JSON.stringify({ balance: 1, subscribe: 1 }));
+            // subscribe to default market if one not already selected
+            if (!activeSymbol && marketSelect.value) subscribe(marketSelect.value);
+            else if (!activeSymbol) subscribe('R_100');
+          } else if (data.msg_type === 'tick' && data.tick) {
+            handleTick(data.tick);
+          } else if (data.msg_type === 'balance') {
+            if (data.balance?.balance) accountBalance.textContent = parseFloat(data.balance.balance).toFixed(2);
+          } else if (data.msg_type === 'buy') {
+            const res = data.buy;
+            if (res.error) log('Trade failed: ' + res.error.message, 'error');
+            else log(`Trade placed! ID: ${res.contract_id}`, 'success');
+            $('tradeResult').classList.remove('hidden');
+            $('tradeResult').textContent = res.error ? res.error.message : 'Trade successful';
+          } else if (data.msg_type === 'error') {
+            log(data.error.message, 'error');
+          }
+        };
+        ws.onclose = () => {
+          if (!isAuthorized) logout();
+          else setStatus('disconnected');
+        };
+        ws.onerror = () => log('WebSocket error', 'error');
+      }
+
+      function logout() {
+        userToken = null; isAuthorized = false;
+        sessionStorage.removeItem('deriv_token');
+        if (ws) { ws.close(); ws = null; }
+        updateUIForAuth();
+        setStatus('disconnected');
+      }
+
+      function updateUIForAuth() {
+        if (isAuthorized) {
+          loginBtn.classList.add('hidden'); logoutBtn.classList.remove('hidden');
+          $('status-indicator').classList.remove('hidden'); balanceDisplay.classList.remove('hidden');
+          sidebar.classList.remove('hidden');
+        } else {
+          loginBtn.classList.remove('hidden'); logoutBtn.classList.add('hidden');
+          $('status-indicator').classList.add('hidden'); balanceDisplay.classList.add('hidden');
+          sidebar.classList.add('hidden');
+        }
+      }
+
+      function setStatus(s) {
+        statusDot.classList.remove('bg-red-500','bg-yellow-500','bg-green-500');
+        if (s === 'connected') { statusDot.classList.add('bg-green-500'); statusLabel.textContent = 'Connected'; }
+        else if (s === 'connecting') { statusDot.classList.add('bg-yellow-500'); statusLabel.textContent = 'Connecting...'; }
+        else { statusDot.classList.add('bg-red-500'); statusLabel.textContent = 'Offline'; }
+      }
+
+      function log(msg, type='info') {
+        const entry = document.createElement('div');
+        entry.className = type === 'error' ? 'text-red-400' : 'text-green-300';
+        entry.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+        consoleLog.appendChild(entry);
+        consoleLog.scrollTop = consoleLog.scrollHeight;
+      }
+
+      // ---------- Trading / Tick ----------
+      function handleTick(tick) {
+        if (!tick.quote) return;
+        const price = parseFloat(tick.quote);
+        currentPrice.textContent = price.toFixed(tick.quote.includes('.') ? tick.quote.split('.')[1].length : 2);
+        lastDigit.textContent = tick.quote.slice(-1);
+        if (!chart) initChart();
+        if (candleSeries) {
+          const time = tick.epoch ? Math.floor(tick.epoch) : Math.floor(Date.now()/1000);
+          if (!currentCandle || time > currentCandle.time) {
+            if (currentCandle) candleSeries.update(currentCandle);
+            currentCandle = { time, open: price, high: price, low: price, close: price };
+          } else {
+            currentCandle.high = Math.max(currentCandle.high, price);
+            currentCandle.low = Math.min(currentCandle.low, price);
+            currentCandle.close = price;
+          }
+          candleSeries.update(currentCandle);
+        }
+      }
+
+      function initChart() {
+        chart = LightweightCharts.createChart($('chart-container'), {
+          layout: { background: { color: '#1e293b' }, textColor: '#94a3b8' },
+          grid: { vertLines: { color: '#334155' }, horzLines: { color: '#334155' } },
+        });
+        candleSeries = chart.addCandlestickSeries({ upColor: '#10b981', downColor: '#ef4444' });
+        window.addEventListener('resize', () => chart.resize());
+      }
+
+      function subscribe(symbol) {
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({ ticks: symbol, subscribe: 1 }));
+          activeSymbol = symbol;
+          log(`Subscribed to ${symbol}`, 'info');
+        }
+      }
+
+      marketSelect.addEventListener('change', () => {
+        if (marketSelect.value) subscribe(marketSelect.value);
+      });
+
+      // ---------- Contract UI ----------
+      const contracts = {
+        rise_fall: { t1:'CALL', t2:'PUT', label1:'▲ Rise', label2:'▼ Fall' },
+        digits: { t1:'DIGITMATCH', t2:'DIGITDIFF', label1:'▲ Match', label2:'▼ Diff', extra:'digit' },
+        over_under: { t1:'DIGITOVER', t2:'DIGITUNDER', label1:'▲ Over', label2:'▼ Under', extra:'digit' },
+        even_odd: { t1:'DIGITEVEN', t2:'DIGITODD', label1:'▲ Even', label2:'▼ Odd' },
+      };
+
+      function updateContractUI() {
+        const c = contracts[currentContract];
+        buyBtn1.textContent = c.label1; buyBtn2.textContent = c.label2;
+        let html = '';
+        if (c.extra === 'digit') html = '<div><label class="text-xs text-muted">Digit</label><input id="digitParam" type="number" value="5" min="0" max="9" class="w-full bg-surface border border-border rounded-lg px-3 py-2 text-sm text-white"></div>';
+        contractParams.innerHTML = html;
+        document.querySelectorAll('.contract-btn').forEach(b => b.classList.remove('border-accent','bg-accent/10'));
+        document.querySelector(`[data-contract="${currentContract}"]`).classList.add('border-accent','bg-accent/10');
+      }
+      document.querySelectorAll('.contract-btn').forEach(b => {
+        b.addEventListener('click', () => { currentContract = b.dataset.contract; updateContractUI(); });
+      });
+
+      function placeTrade(type) {
+        if (!isAuthorized || !activeSymbol) return alert('Login and select a market');
+        const stake = parseFloat(stakeInput.value), duration = parseInt(durationInput.value);
+        if (isNaN(stake) || stake < 0.35) return alert('Min stake 0.35');
+        const c = contracts[currentContract];
+        const params = { amount: stake, basis:"stake", contract_type: type==='rise'?c.t1:c.t2, currency:"USD", duration, duration_unit:"t", symbol: activeSymbol };
+        if (c.extra === 'digit') {
+          const digit = parseInt(document.getElementById('digitParam')?.value);
+          if (isNaN(digit) || digit<0||digit>9) return alert('Digit 0-9');
+          params.barrier = digit;
+        }
+        ws.send(JSON.stringify({ buy: 1, price: stake, parameters: params }));
+      }
+      buyBtn1.addEventListener('click', () => placeTrade('rise'));
+      buyBtn2.addEventListener('click', () => placeTrade('fall'));
+
+      // Clear console
+      $('clearConsoleBtn').addEventListener('click', () => { consoleLog.innerHTML = ''; });
+
+      // Login modal events
+      loginBtn.addEventListener('click', () => loginModal.classList.remove('hidden'));
+      $('close-login-modal').addEventListener('click', () => loginModal.classList.add('hidden'));
+      $('oauth-login-btn').addEventListener('click', () => window.location.href = OAUTH_URL);
+      $('manual-login-btn').addEventListener('click', () => {
+        const token = $('manual-token-input').value.trim();
+        if (!token) return alert('Enter a token');
+        connect(token);
+      });
+      logoutBtn.addEventListener('click', logout);
+
+      // ---------- Init ----------
+      function init() {
+        $('currentYear').textContent = new Date().getFullYear();
+        initTour();
+        updateContractUI();
+        if (parseHashToken()) {
+          connect(userToken);
+        } else if (sessionStorage.getItem('deriv_token')) {
+          userToken = sessionStorage.getItem('deriv_token');
+          connect(userToken);
+        } else {
+          updateUIForAuth();
+        }
+      }
+      window.addEventListener('load', init);
+    })();
+  </script>
 </body>
 </html>
